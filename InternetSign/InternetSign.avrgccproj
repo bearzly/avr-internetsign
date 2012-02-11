@@ -81,10 +81,10 @@
     </ToolchainSettings>
     <MemorySettings>
       <MemorySegments>
-  <InitialStack IsEnabled="0">
-    <Address>0x800</Address>
-  </InitialStack>
-</MemorySegments>
+        <InitialStack IsEnabled="0">
+          <Address>0x800</Address>
+        </InitialStack>
+      </MemorySegments>
     </MemorySettings>
     <GenerateHexFile>True</GenerateHexFile>
     <GenerateMapFile>True</GenerateMapFile>
@@ -96,6 +96,9 @@
       <SubType>compile</SubType>
     </Compile>
     <Compile Include="InternetSign.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="wiznetping.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

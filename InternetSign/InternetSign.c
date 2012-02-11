@@ -13,9 +13,9 @@
 #define F_CPU 1000000UL
 #include <avr/delay.h>
 
-#define CS1 PD4
-#define CLK PD3
-#define DATA PD1
+#define CS1 PB0
+#define CLK PD7
+#define DATA PD6
 #define LED PD2
 
 #define output_low(port,pin) port &= ~(1<<pin)
@@ -46,17 +46,19 @@
 #define CHARW 5
 #define SIGNW 4 * 8
 
+#define SET_BUFFER(buffer, data, idx) if (0 < idx && idx < SIGNW) buffer[idx] = data
+
 void delay() {
     for (int i = 0; i < 100; i++);
 }
 
 void deselect() {
-    output_high(PORTD, CS1);
+    output_high(PORTB, CS1);
     //delay();
 }    
 
 void select() {
-    output_low(PORTD, CS1);
+    output_low(PORTB, CS1);
     //delay();
 }
 
@@ -138,17 +140,10 @@ void clear_display() {
     write_end();
 }
 
-static char message[MSG_LENGTH] = "THIS THING IS REALLY FLAKY";
+static char message[MSG_LENGTH] = "aaabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 !@#$%^&*() `~-_=+[];',.{}:\"<>?|\\";
 static uint8_t frame_buffer[SIGNW];
 
-void set_buffer(uint8_t* buffer, uint8_t data, uint8_t idx) {
-	if (idx < 0 || idx > SIGNW) {
-		return;
-	}
-	buffer[idx] = data; 
-} 
-
-void update_buffer(const char* msg, uint8_t* buffer, int idx) {
+void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
 	int real_pos = 0;
 	
 	memset((void *)buffer, 0, SIGNW);
@@ -157,16 +152,16 @@ void update_buffer(const char* msg, uint8_t* buffer, int idx) {
 		char c = msg[i];
 		if (c == ' ') {
 			real_pos += 2;
-			set_buffer(buffer, 0, real_pos + idx);
-			set_buffer(buffer, 0, real_pos + idx + 1);
+			SET_BUFFER(buffer, 0, real_pos + idx);
+			SET_BUFFER(buffer, 0, real_pos + idx + 1);
 		} else {
 			for (int j = 0; j < 5; j++) {
 				real_pos++;
                 uint8_t data = pgm_read_byte(Font5x7 + (c - 32) * 5 + j);
-                set_buffer(buffer, data, real_pos + idx);
+                SET_BUFFER(buffer, data, real_pos + idx);
             }
-			real_pos += 1;
-		    set_buffer(buffer, 0, real_pos + idx);
+			real_pos ++;
+		    SET_BUFFER(buffer, 0, real_pos + idx);
 		}
 	}
 }
@@ -182,12 +177,13 @@ void write_buffer(const uint8_t* buffer) {
 	write_end();
 }
 
+#if 0
 int main(void)
 {	
     set_output(DDRD, CLK);
     set_output(DDRD, LED);
     set_output(DDRD, DATA);
-    set_output(DDRD, CS1);
+    set_output(DDRB, CS1);
     
     deselect();
     
@@ -195,7 +191,7 @@ int main(void)
     write_command(LED_ON);
     write_command(RC_MASTER_MODE);
     write_command(COM_OPTION);
-    write_command(PWM_DUTY_8);
+    write_command(PWM_DUTY_16);
     
 	int length = 0;
 	for (int i = 0; i < strlen(message); i++) {
@@ -206,14 +202,15 @@ int main(void)
 		}
 	}
 	
-	uint8_t i = SIGNW;
+	int16_t i = SIGNW;
 	while (1) {
 		update_buffer(message, frame_buffer, i);
 		i--;
-		if (i < 0) {
+		if (i < -length) {
 			i = SIGNW;
 		}			
 	    write_buffer(frame_buffer);
-		_delay_ms(20);
+		//_delay_ms(0);
 	}
 }
+#endif

@@ -98,7 +98,7 @@
     <Compile Include="InternetSign.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="wiznetping.c">
+    <Compile Include="WebServer.c">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

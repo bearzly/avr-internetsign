@@ -140,7 +140,7 @@ void clear_display() {
     write_end();
 }
 
-static char message[MSG_LENGTH] = "aaabcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 !@#$%^&*() `~-_=+[];',.{}:\"<>?|\\";
+static char message[MSG_LENGTH] = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 !@#$%^&*() `~-_=+[];',.{}:\"<>?|\\";
 static uint8_t frame_buffer[SIGNW];
 
 void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {

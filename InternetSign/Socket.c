@@ -11,6 +11,8 @@
 #include <util/delay.h>
 #include <avr/pgmspace.h>
 
+#include "Socket.h"
+
 #define SPI_PORT PORTB
 #define SPI_DDR  DDRB
 #define SPI_CS   PORTB2
@@ -41,15 +43,6 @@
 #define S0_RX_RD   0x0428      // Socket 0: Rx Read Pointer: 0x0428 to 0x0429
 #define TXBUFADDR  0x4000      // W5100 Send Buffer Base Address
 #define RXBUFADDR  0x6000      // W5100 Read Buffer Base Address
-// S0_MR values
-#define MR_CLOSE	  0x00    // Unused socket
-#define MR_TCP		  0x01    // TCP
-#define MR_UDP		  0x02    // UDP
-#define MR_IPRAW	  0x03	  // IP LAYER RAW SOCK
-#define MR_MACRAW	  0x04	  // MAC LAYER RAW SOCK
-#define MR_PPPOE	  0x05	  // PPPoE
-#define MR_ND		  0x20	  // No Delayed Ack(TCP) flag
-#define MR_MULTI	  0x80	  // support multicating
 // S0_CR values
 #define CR_OPEN          0x01	  // Initialize or open socket
 #define CR_LISTEN        0x02	  // Wait connection request in tcp mode(Server mode)
@@ -60,32 +53,10 @@
 #define CR_SEND_MAC      0x21	  // Send data with MAC address, so without ARP process
 #define CR_SEND_KEEP     0x22	  // Send keep alive message
 #define CR_RECV          0x40	  // Update Rx memory buffer pointer and receive data
-// S0_SR values
-#define SOCK_CLOSED      0x00     // Closed
-#define SOCK_INIT        0x13	  // Init state
-#define SOCK_LISTEN      0x14	  // Listen state
-#define SOCK_SYNSENT     0x15	  // Connection state
-#define SOCK_SYNRECV     0x16	  // Connection state
-#define SOCK_ESTABLISHED 0x17	  // Success to connect
-#define SOCK_FIN_WAIT    0x18	  // Closing state
-#define SOCK_CLOSING     0x1A	  // Closing state
-#define SOCK_TIME_WAIT	 0x1B	  // Closing state
-#define SOCK_CLOSE_WAIT  0x1C	  // Closing state
-#define SOCK_LAST_ACK    0x1D	  // Closing state
-#define SOCK_UDP         0x22	  // UDP socket
-#define SOCK_IPRAW       0x32	  // IP raw mode socket
-#define SOCK_MACRAW      0x42	  // MAC raw mode socket
-#define SOCK_PPPOE       0x5F	  // PPPOE socket
 #define TX_BUF_MASK      0x07FF   // Tx 2K Buffer Mask:
 #define RX_BUF_MASK      0x07FF   // Rx 2K Buffer Mask:
 #define NET_MEMALLOC     0x05     // Use 2K of Tx/Rx Buffer
 
-#define TCP_PORT         80       // TCP/IP Port for HTTP
-
-uint8_t sockreg = 0;
-
-#define MAX_BUFFER_SIZE 512
-uint8_t buffer[MAX_BUFFER_SIZE];
 
 #define WAIT_FOR_SPI while (!(SPSR & (1<<SPIF)));
 
@@ -267,11 +238,7 @@ uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
 	uint16_t ptr, offset, realaddr;
 	
 	if (len <= 0 || sock != 0) return 1;
-	
-	if (len > MAX_BUFFER_SIZE) {
-		len = MAX_BUFFER_SIZE - 2;
-	}
-	
+		
 	ptr = SPI_Read(S0_RX_RD);
 	offset = ((ptr & 0x00FF) << 8 + SPI_Read(S0_RX_RD + 1));
 	
@@ -296,6 +263,12 @@ uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
 uint16_t recv_size() {
 	return ((SPI_Read(S0_RX_RSR) & 0x00FF) << 8 ) + SPI_Read(S0_RX_RSR + 1);
 }
+
+uint8_t sockstat() {
+	return SPI_Read(S0_SR);
+}
+
+#if 0
 
 int main() {
 	uint8_t sockstat;
@@ -346,3 +319,5 @@ int main() {
 	
 	return 0;
 }
+
+#endif

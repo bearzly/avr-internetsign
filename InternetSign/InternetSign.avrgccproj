@@ -98,7 +98,19 @@
     <Compile Include="InternetSign.c">
       <SubType>compile</SubType>
     </Compile>
-    <Compile Include="WebServer.c">
+    <Compile Include="Sign.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Sign.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Socket.c">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="Socket.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="System.h">
       <SubType>compile</SubType>
     </Compile>
   </ItemGroup>

@@ -66,7 +66,8 @@ int main(void)
 	
 	Init_Wiznet();
 	
-    initialize_sign(1);
+    initialize_sign();
+	set_brightness(4);
     
 	int length = 0;
 	for (int i = 0; i < strlen(message); i++) {
@@ -93,11 +94,14 @@ int main(void)
 				if (rsize > 0) {
 					if (recv(0, buffer, rsize) <= 0) break;
 					
-					const char* newmessage = strchr(buffer, '=');
-					if (newmessage) {
-						const char* space = strchr(newmessage+1, ' ');
-						urldecode(message, newmessage+1, space-newmessage);
-						message[space-newmessage] = '\0';
+					char* method = strtok(buffer, " ");
+					char* path = strtok(0, " ");
+					char* remainder = strtok(0, " ");
+					const char* newmessage = strchr(path, '=');
+					if (newmessage && (newmessage < remainder)) {
+						int size = strlen(newmessage);
+						urldecode(message, newmessage+1, size);
+						message[size] = '\0';
 						i = SIGNW;
 					
 					    length = 0;
@@ -111,7 +115,9 @@ int main(void)
 					}					
 					
 					strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
-					strcat_P((char *)buffer, PSTR("<html><body><h1>This is our EE400 design project!</h1></body></html>"));
+					strcat_P((char *)buffer, HTML_HEADER);
+					strcat_P((char *)buffer, PSTR("<h1>This is our EE400 design project!</h1>"));
+					strcat_P((char *)buffer, HTML_FOOTER);
 					
 					if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
 					

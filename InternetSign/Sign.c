@@ -161,12 +161,15 @@ void write_buffer(const uint8_t* buffer) {
 	write_end();
 }
 
-void initialize_sign(uint8_t brightness) {
+void initialize_sign() {
 	deselect();
     
     write_command(SYS_EN);
     write_command(LED_ON);
     write_command(RC_MASTER_MODE);
     write_command(COM_OPTION);
-    write_command((PWM_DUTY_4 & 0xF0) + brightness);
+}
+
+void set_brightness(uint8_t brightness) {
+	write_command((PWM_DUTY_4 & 0xF0) + brightness);
 }

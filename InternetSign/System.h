@@ -9,6 +9,8 @@
 #ifndef SYSTEM_H_
 #define SYSTEM_H_
 
+#include <avr/pgmspace.h>
+
 #define F_CPU 1000000UL
 
 #define MSG_LENGTH 256
@@ -33,5 +35,23 @@
 #define output_high(port,pin) port |= (1<<pin)
 #define set_input(portdir,pin) portdir &= ~(1<<pin)
 #define set_output(portdir,pin) portdir |= (1<<pin)
+
+const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
+"<html>"
+"<head>"
+"	<title>Internet Sign</title>"
+"</head>"
+"<body>"
+"	<div id='header'>"
+"		<ul>"
+"			<li><a href='/'>Home</a></li>"
+"			<li><a href='/config'>Configuration</a></li>"
+"		</ul>"
+"	</div>"
+"	<div id='content'>";
+
+const static PROGMEM char HTML_FOOTER[] = "	</div>"
+"</body>"
+"</html>";
 
 #endif /* SYSTEM_H_ */

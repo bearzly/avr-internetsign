@@ -108,6 +108,9 @@ void Init_Wiznet() {
   unsigned char gtw_addr[] = {192,168,1,1};
   // Setting the Wiznet W5100 Mode Register: 0x0000
   SPI_Write(MR,0x80);            // MR = 0b10000000;
+  
+  _delay_ms(10);
+  
   // Setting the Wiznet W5100 Gateway Address (GAR): 0x0001 to 0x0004
   SPI_Write(GAR + 0,gtw_addr[0]);
   SPI_Write(GAR + 1,gtw_addr[1]);
@@ -159,7 +162,7 @@ uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
 		close(sock);
 	}
 	
-	SPI_Write(S0_MR, protocol);
+	SPI_Write(S0_MR, protocol|0x40);
 	
 	SPI_Write(S0_PORT, ((port & 0xFF00) >> 8));
 	SPI_Write(S0_PORT + 1, port & 0x00FF);
@@ -170,7 +173,7 @@ uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
 	if (SPI_Read(S0_SR) == SOCK_INIT) {
 		ret = 1;
 	} else {
-		close(sock);
+		//close(sock);
 	}
 	
 	return ret;

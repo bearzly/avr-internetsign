@@ -22,6 +22,34 @@ uint8_t buffer[MAX_BUFFER_SIZE];
 static char message[MSG_LENGTH] = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 !@#$%^&*() `~-_=+[];',.{}:\"<>?|\\";
 static uint8_t frame_buffer[SIGNW];
 
+int chartoint(char c) {
+	if ((c >= '0') && (c <= '9')) {
+		return c - '0';
+	} else if ((c >= 'A') && (c <= 'Z')) {
+		return c - 'A' + 10;
+	} else if ((c >= 'a') && (c <= 'a')) {
+		return c - 'a' + 10;
+	} else {
+		return -1;
+	}
+}
+
+void urldecode(char* dest, const char* src, int size) {
+	unsigned char entity = 0;
+	int j = 0;
+	
+	for (int i = 0; i < size; i++) {
+		if (src[i] == '%') {
+			dest[j] = (chartoint(src[i + 1]) << 4) | chartoint(src[i + 2]);
+			i += 2;
+		} else {
+			dest[j] = src[i];
+		}
+		j++;
+	}
+	dest[j] = '\0';
+}
+
 int main(void)
 {	
 	uint8_t status, rsize;
@@ -38,7 +66,7 @@ int main(void)
 	
 	Init_Wiznet();
 	
-    initialize_sign(4);
+    initialize_sign(1);
     
 	int length = 0;
 	for (int i = 0; i < strlen(message); i++) {
@@ -64,7 +92,24 @@ int main(void)
 			    rsize = recv_size();
 				if (rsize > 0) {
 					if (recv(0, buffer, rsize) <= 0) break;
-					//TODO: Request parsing
+					
+					const char* newmessage = strchr(buffer, '=');
+					if (newmessage) {
+						const char* space = strchr(newmessage+1, ' ');
+						urldecode(message, newmessage+1, space-newmessage);
+						message[space-newmessage] = '\0';
+						i = SIGNW;
+					
+					    length = 0;
+	                    for (int j = 0; j < strlen(message); j++) {
+		                    if (message[j] == ' ') {
+			                    length += 2;
+		                    } else {
+			                    length += CHARW + 1;
+		                    }
+	                    }
+					}					
+					
 					strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
 					strcat_P((char *)buffer, PSTR("<html><body><h1>This is our EE400 design project!</h1></body></html>"));
 					

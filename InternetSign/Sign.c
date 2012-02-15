@@ -131,7 +131,8 @@ void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
 	
 	memset((void *)buffer, 0, SIGNW);
 	
-	for (int i = 0; i < strlen(msg); i++) {
+	const int size = strlen(msg);
+	for (int i = 0; i < size; i++) {
 		char c = msg[i];
 		if (c == ' ') {
 			real_pos += 2;

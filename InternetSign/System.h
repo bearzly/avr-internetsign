@@ -40,6 +40,9 @@ const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
 "<html>"
 "<head>"
 "	<title>Internet Sign</title>"
+"   <style type='text/css'>"
+"body{font-family:Arial;background:#eee;padding:10px 0}#header{margin:auto;width:70%;background:#777;padding:10px 0}#header ul{padding:0;margin:0;margin-left:3px}#header li{display:inline;background:#555;padding:7px 5px;border:1px #222}#header a{color:#ccc;text-decoration:none}#header a:hover{text-decoration:underline}#container{margin:auto;width:70%;background:#fff;padding:10px 0}h1{margin:0}#content{padding:5px 10px}"
+"   </style>"
 "</head>"
 "<body>"
 "	<div id='header'>"
@@ -48,9 +51,10 @@ const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
 "			<li><a href='/config'>Configuration</a></li>"
 "		</ul>"
 "	</div>"
+"   <div id='container'>"
 "	<div id='content'>";
 
-const static PROGMEM char HTML_FOOTER[] = "	</div>"
+const static PROGMEM char HTML_FOOTER[] = "	</div></div>"
 "</body>"
 "</html>";
 

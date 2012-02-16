@@ -16,7 +16,7 @@
 
 #define HTTP_PORT         80       // TCP/IP Port for HTTP
 
-#define MAX_BUFFER_SIZE 512
+#define MAX_BUFFER_SIZE 1024
 uint8_t buffer[MAX_BUFFER_SIZE];
 
 static char message[MSG_LENGTH] = "abcdefghijklmnopqrstuvwxyz ABCDEFGHIJKLMNOPQRSTUVWXYZ 1234567890 !@#$%^&*() `~-_=+[];',.{}:\"<>?|\\";
@@ -42,6 +42,8 @@ void urldecode(char* dest, const char* src, int size) {
 		if (src[i] == '%') {
 			dest[j] = (chartoint(src[i + 1]) << 4) | chartoint(src[i + 2]);
 			i += 2;
+		} else if (src[i] == '+') {
+		    dest[j] = ' ';
 		} else {
 			dest[j] = src[i];
 		}
@@ -116,7 +118,7 @@ int main(void)
 					
 					strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
 					strcat_P((char *)buffer, HTML_HEADER);
-					strcat_P((char *)buffer, PSTR("<h1>This is our EE400 design project!</h1>"));
+					strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='get' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
 					strcat_P((char *)buffer, HTML_FOOTER);
 					
 					if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
@@ -142,6 +144,6 @@ int main(void)
 			i = SIGNW;
 		}			
 	    write_buffer(frame_buffer);
-		//_delay_ms(0);
+		_delay_ms(10);
 	}
 }

@@ -101,42 +101,36 @@ unsigned char SPI_Read(uint16_t addr) {
 }
 
 void Init_Wiznet() {
-	// Ethernet Setup
-  unsigned char mac_addr[] = {0x00,0x16,0x36,0xDE,0x58,0xF6};
-  unsigned char ip_addr[] = {192,168,1,210};
-  unsigned char sub_mask[] = {255,255,255,0};
-  unsigned char gtw_addr[] = {192,168,1,1};
   // Setting the Wiznet W5100 Mode Register: 0x0000
   SPI_Write(MR,0x80);            // MR = 0b10000000;
   
   _delay_ms(10);
-  
-  // Setting the Wiznet W5100 Gateway Address (GAR): 0x0001 to 0x0004
-  SPI_Write(GAR + 0,gtw_addr[0]);
-  SPI_Write(GAR + 1,gtw_addr[1]);
-  SPI_Write(GAR + 2,gtw_addr[2]);
-  SPI_Write(GAR + 3,gtw_addr[3]);
-  // Setting the Wiznet W5100 Source Address Register (SAR): 0x0009 to 0x000E
-  SPI_Write(SAR + 0,mac_addr[0]);
-  SPI_Write(SAR + 1,mac_addr[1]);
-  SPI_Write(SAR + 2,mac_addr[2]);
-  SPI_Write(SAR + 3,mac_addr[3]);
-  SPI_Write(SAR + 4,mac_addr[4]);
-  SPI_Write(SAR + 5,mac_addr[5]);
-  // Setting the Wiznet W5100 Sub Mask Address (SUBR): 0x0005 to 0x0008
-  SPI_Write(SUBR + 0,sub_mask[0]);
-  SPI_Write(SUBR + 1,sub_mask[1]);
-  SPI_Write(SUBR + 2,sub_mask[2]);
-  SPI_Write(SUBR + 3,sub_mask[3]);
-  // Setting the Wiznet W5100 IP Address (SIPR): 0x000F to 0x0012
-  SPI_Write(SIPR + 0,ip_addr[0]);
-  SPI_Write(SIPR + 1,ip_addr[1]);
-  SPI_Write(SIPR + 2,ip_addr[2]);
-  SPI_Write(SIPR + 3,ip_addr[3]);    
 
   // Setting the Wiznet W5100 RX and TX Memory Size (2KB),
   SPI_Write(RMSR,NET_MEMALLOC);
   SPI_Write(TMSR,NET_MEMALLOC);
+}
+
+void write_bytes(uint16_t address, const unsigned char* data, uint8_t length) {
+	for (int i = 0; i < length; i++) {
+		SPI_Write(address + i, data[i]);
+	}
+}
+
+void set_ip(unsigned char* ip_addr) {
+    write_bytes(SIPR, ip_addr, 4);
+}
+
+void set_gateway(unsigned char* gateway_addr) {
+    write_bytes(GAR, gateway_addr, 4);
+}
+
+void set_mac(unsigned char* mac_addr) {
+    write_bytes(SAR, mac_addr, 6);
+}
+
+void set_subnet(unsigned char* subnet_mask) {
+    write_bytes(SUBR, subnet_mask, 4);
 }
 
 void close(uint8_t sock) {
@@ -154,7 +148,7 @@ void disconnect(uint8_t sock) {
 }
 
 uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
-	if (sock != 0) return;
+	if (sock != 0) return 0;
 	
 	uint8_t ret = 0;
 	
@@ -173,7 +167,7 @@ uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
 	if (SPI_Read(S0_SR) == SOCK_INIT) {
 		ret = 1;
 	} else {
-		//close(sock);
+		close(sock);
 	}
 	
 	return ret;
@@ -243,7 +237,7 @@ uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
 	if (len <= 0 || sock != 0) return 1;
 		
 	ptr = SPI_Read(S0_RX_RD);
-	offset = ((ptr & 0x00FF) << 8 + SPI_Read(S0_RX_RD + 1));
+	offset = (((ptr & 0x00FF) << 8) + SPI_Read(S0_RX_RD + 1));
 	
 	while (len) {
 		len--;
@@ -270,57 +264,3 @@ uint16_t recv_size() {
 uint8_t sockstat() {
 	return SPI_Read(S0_SR);
 }
-
-#if 0
-
-int main() {
-	uint8_t sockstat;
-	uint16_t rsize;
-	
-	SPI_DDR = (1<<SPI_MOSI)|(1<<SPI_SCK)|(1<<SPI_CS);
-	SPI_PORT |= (1<<SPI_CS);
-	
-	SPCR = (1<<SPE)|(1<<MSTR);
-	SPSR |= (1<<SPI2X);
-	
-	Init_Wiznet();
-	
-	while (1) {
-		sockstat = SPI_Read(S0_SR);
-		switch(sockstat) {
-			case SOCK_CLOSED:
-			    if (socket(sockreg, MR_TCP, TCP_PORT) > 0) {
-					if (listen(sockreg) <= 0) {
-						_delay_ms(1);
-					}
-				}
-				break;
-			case SOCK_ESTABLISHED:
-			    rsize = recv_size();
-				if (rsize > 0) {
-					if (recv(sockreg, buffer, rsize) <= 0) break;
-					//TODO: Request parsing
-					strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
-					strcat_P((char *)buffer, PSTR("<html><body><h1>This is our EE400 design project!</h1></body></html>"));
-					
-					if (send(sockreg, buffer, strlen((char *)buffer)) <= 0) break;
-					
-					disconnect(sockreg);
-				} else {
-					_delay_us(10);
-				}
-				break;
-			case SOCK_FIN_WAIT:
-			case SOCK_CLOSING:
-			case SOCK_TIME_WAIT:
-			case SOCK_CLOSE_WAIT:
-			case SOCK_LAST_ACK:
-			    close(sockreg);
-				break;
-		}
-	}
-	
-	return 0;
-}
-
-#endif

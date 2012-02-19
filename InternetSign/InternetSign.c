@@ -8,11 +8,13 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 
-#include <util/delay.h>
+#include <string.h>
 
 #include "System.h"
 #include "Sign.h"
 #include "Socket.h"
+
+#include <util/delay.h>
 
 #define HTTP_PORT         80       // TCP/IP Port for HTTP
 
@@ -35,7 +37,6 @@ int chartoint(char c) {
 }
 
 void urldecode(char* dest, const char* src, int size) {
-	unsigned char entity = 0;
 	int j = 0;
 	
 	for (int i = 0; i < size; i++) {
@@ -67,7 +68,18 @@ int main(void)
 	SPSR |= (1<<SPI2X);
 	
 	Init_Wiznet();
-	
+
+    // Ethernet Setup
+    unsigned char mac_addr[] = {0x00,0x16,0x36,0xDE,0x58,0xF6};
+    unsigned char ip_addr[] = {192,168,1,210};
+    unsigned char sub_mask[] = {255,255,255,0};
+    unsigned char gtw_addr[] = {192,168,1,1};
+		
+	set_ip(ip_addr);
+	set_gateway(gtw_addr);
+	set_mac(mac_addr);
+	set_subnet(sub_mask);
+
     initialize_sign();
 	set_brightness(4);
     
@@ -96,7 +108,7 @@ int main(void)
 				if (rsize > 0) {
 					if (recv(0, buffer, rsize) <= 0) break;
 					
-					char* method = strtok(buffer, " ");
+					char* method = strtok((char *)buffer, " ");
 					char* path = strtok(0, " ");
 					char* remainder = strtok(0, " ");
 					const char* newmessage = strchr(path, '=');
@@ -119,6 +131,7 @@ int main(void)
 					strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
 					strcat_P((char *)buffer, HTML_HEADER);
 					strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='get' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
+					strcat((char *)buffer, message);
 					strcat_P((char *)buffer, HTML_FOOTER);
 					
 					if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
@@ -144,6 +157,6 @@ int main(void)
 			i = SIGNW;
 		}			
 	    write_buffer(frame_buffer);
-		_delay_ms(10);
+		//_delay_ms(10);
 	}
 }

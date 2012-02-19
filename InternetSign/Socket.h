@@ -35,7 +35,12 @@
 #define MR_ND		  0x20	  // No Delayed Ack(TCP) flag
 #define MR_MULTI	  0x80	  // support multicating
 
-void Init_Wzinet();
+void Init_Wiznet();
+void set_ip();
+void set_gateway();
+void set_mac();
+void set_subnet();
+
 void close(uint8_t sock);
 void disconnect(uint8_t sock);
 uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port);

@@ -32,11 +32,11 @@
 #define SPI_MISO PORTB4
 
 // EEPROM addresses
-#define IP_ADDR   0x0000
-#define MAC_ADDR  0x0004
-#define SNET_MASK 0x000C
-#define GTWY_ADDR 0x0010
-#define MSG_ADDR  0x0020
+#define IP_ADDR   0x0000  // 4 bytes
+#define MAC_ADDR  0x0004  // 6 bytes
+#define SNET_MASK 0x000C  // 4 bytes
+#define GTWY_ADDR 0x0010  // 4 bytes
+#define MSG_ADDR  0x0020  // 256 bytes
 
 #define output_low(port,pin) port &= ~(1<<pin)
 #define output_high(port,pin) port |= (1<<pin)

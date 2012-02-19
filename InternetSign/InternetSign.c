@@ -55,7 +55,7 @@ void urldecode(char* dest, const char* src, int size) {
 
 int main(void)
 {	
-	uint8_t status, rsize;
+	uint8_t status;
 	
 	set_output(SIGN_DATA_DDR, SIGN_SCK);
     set_output(SIGN_DATA_DDR, SIGN_DATA);
@@ -103,43 +103,44 @@ int main(void)
 					}
 				}
 				break;
-			case SOCK_ESTABLISHED:
-			    rsize = recv_size();
-				if (rsize > 0) {
-					if (recv(0, buffer, rsize) <= 0) break;
-					
-					char* method = strtok((char *)buffer, " ");
-					char* path = strtok(0, " ");
-					char* remainder = strtok(0, " ");
-					const char* newmessage = strchr(path, '=');
-					if (newmessage && (newmessage < remainder)) {
-						int size = strlen(newmessage);
-						urldecode(message, newmessage+1, size);
-						message[size] = '\0';
-						i = SIGNW;
-					
-					    length = 0;
-	                    for (int j = 0; j < strlen(message); j++) {
-		                    if (message[j] == ' ') {
-			                    length += 2;
-		                    } else {
-			                    length += CHARW + 1;
-		                    }
-	                    }
-					}					
-					
-					strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
-					strcat_P((char *)buffer, HTML_HEADER);
-					strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='get' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
-					strcat((char *)buffer, message);
-					strcat_P((char *)buffer, HTML_FOOTER);
-					
-					if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
-					
-					disconnect(0);
-				} else {
-					_delay_us(10);
+			case SOCK_ESTABLISHED:;
+				uint16_t len = 0;
+				uint16_t size = 1;
+				while (size && (len < MAX_BUFFER_SIZE)) {
+					size = recv(0, buffer + len, MAX_BUFFER_SIZE - len);
+					len += size;
 				}
+				buffer[len >= MAX_BUFFER_SIZE - 1 ? MAX_BUFFER_SIZE - 1 : len] = '\0';
+					
+				char* method = strtok((char *)buffer, " ");
+				char* path = strtok(0, " ");
+				char* post = strstr(path + strlen(path) + 1, "\r\n\r\n");
+				const char* newmessage = strchr(post, '=');
+				if (newmessage) {
+					int size = strlen(newmessage);
+					urldecode(message, newmessage+1, size);
+					message[size] = '\0';
+					i = SIGNW;
+					
+					length = 0;
+	                for (int j = 0; j < strlen(message); j++) {
+		                if (message[j] == ' ') {
+			                length += 2;
+		                } else {
+			                length += CHARW + 1;
+		                }
+	                }
+				}					
+					
+				strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
+				strcat_P((char *)buffer, HTML_HEADER);
+				strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
+				strcat((char *)buffer, message);
+				strcat_P((char *)buffer, HTML_FOOTER);
+					
+				if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
+					
+				disconnect(0);
 				break;
 			case SOCK_FIN_WAIT:
 			case SOCK_CLOSING:

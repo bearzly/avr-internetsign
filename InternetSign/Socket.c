@@ -232,33 +232,33 @@ uint16_t send(uint8_t sock, const uint8_t* buf, uint16_t len) {
 }
 
 uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
-	uint16_t ptr, offset, realaddr;
+	if (sock != 0) return 0;
 	
-	if (len <= 0 || sock != 0) return 1;
+	uint16_t rcv_size = SPI_Read(S0_RX_RSR);
+	rcv_size = (rcv_size << 8) | SPI_Read(S0_RX_RSR + 1);
+	
+	uint16_t offset = SPI_Read(S0_RX_RD);
+	offset = (offset << 8) | SPI_Read(S0_RX_RD + 1);
+	offset &= RX_BUF_MASK;
 		
-	ptr = SPI_Read(S0_RX_RD);
-	offset = (((ptr & 0x00FF) << 8) + SPI_Read(S0_RX_RD + 1));
+	uint16_t bytes_to_read = rcv_size;
+	if ((offset + rcv_size) > (RX_BUF_MASK + 1)) {
+		bytes_to_read = RX_BUF_MASK + 1 - offset;
+	}
 	
-	while (len) {
-		len--;
-		realaddr = RXBUFADDR + (offset & RX_BUF_MASK);
-		*buf = SPI_Read(realaddr);
+	for (int i = 0; i < bytes_to_read; i++) {
+		*buf = SPI_Read(RXBUFADDR + (offset & RX_BUF_MASK));
 		offset++;
 		buf++;
 	}
-	*buf = '\0';
-	
+		
 	SPI_Write(S0_RX_RD, (offset & 0xFF00) >> 8);
 	SPI_Write(S0_RX_RD + 1, (offset & 0x00FF));
 	
 	SPI_Write(S0_CR, CR_RECV);
 	while (SPI_Read(S0_CR));
 	
-	return 1;
-}
-
-uint16_t recv_size() {
-	return ((SPI_Read(S0_RX_RSR) & 0x00FF) << 8 ) + SPI_Read(S0_RX_RSR + 1);
+	return bytes_to_read;
 }
 
 uint8_t sockstat() {

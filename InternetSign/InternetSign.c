@@ -7,6 +7,7 @@
 
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 
 #include <string.h>
 
@@ -15,6 +16,8 @@
 #include "Socket.h"
 
 #include <util/delay.h>
+
+#define EEGET(addr) eeprom_read_byte((const uint8_t*)addr)
 
 #define HTTP_PORT         80       // TCP/IP Port for HTTP
 
@@ -68,17 +71,33 @@ int main(void)
 	SPSR |= (1<<SPI2X);
 	
 	Init_Wiznet();
-
-    // Ethernet Setup
-    unsigned char mac_addr[] = {0x00,0x16,0x36,0xDE,0x58,0xF6};
-    unsigned char ip_addr[] = {192,168,1,210};
-    unsigned char sub_mask[] = {255,255,255,0};
-    unsigned char gtw_addr[] = {192,168,1,1};
-		
-	set_ip(ip_addr);
-	set_gateway(gtw_addr);
-	set_mac(mac_addr);
-	set_subnet(sub_mask);
+	
+	set_ip(
+	    EEGET(IP_ADDR + 0),
+	    EEGET(IP_ADDR + 1),
+	    EEGET(IP_ADDR + 2),
+	    EEGET(IP_ADDR + 3)
+	);
+	set_gateway(
+	    EEGET(GTWY_ADDR + 0),
+		EEGET(GTWY_ADDR + 1),
+		EEGET(GTWY_ADDR + 2),
+		EEGET(GTWY_ADDR + 3)
+	);
+	set_mac(
+	    EEGET(MAC_ADDR + 0),
+		EEGET(MAC_ADDR + 1),
+		EEGET(MAC_ADDR + 2),
+		EEGET(MAC_ADDR + 3),
+		EEGET(MAC_ADDR + 4),
+		EEGET(MAC_ADDR + 5)
+	);
+	set_subnet(
+	    EEGET(SNET_MASK + 0),
+		EEGET(SNET_MASK + 1),
+		EEGET(SNET_MASK + 2),
+		EEGET(SNET_MASK + 3)
+	);
 
     initialize_sign();
 	set_brightness(4);
@@ -131,13 +150,30 @@ int main(void)
 		                }
 	                }
 				}					
-					
-				strcpy_P((char *)buffer, PSTR("HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n"));
-				strcat_P((char *)buffer, HTML_HEADER);
-				strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
-				strcat((char *)buffer, message);
-				strcat_P((char *)buffer, HTML_FOOTER);
-					
+				
+				int isConfig = strcmp_P(path, PSTR("/config")) == 0;
+				int isOther = !isConfig && (strcmp_P(path, PSTR("/")) != 0);
+				
+				if (isOther) {
+					strcpy_P((char *)buffer, HTTP_NOT_FOUND);
+				} else {
+				    strcpy_P((char *)buffer, HTTP_OK);
+				    strcat_P((char *)buffer, HTML_HEADER);
+				    if (isConfig) {
+					    strcat_P((char *)buffer, PSTR("<h1>Configuration</h1><table>"));
+						sprintf((char *)buffer+strlen(buffer), "<tr><td>IP Address</td><td>%d.%d.%d.%d</td></tr>", EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3));
+						sprintf((char *)buffer+strlen(buffer), "<tr><td>Gateway Address</td><td>%d.%d.%d.%d</td></tr>", EEGET(GTWY_ADDR+0),EEGET(GTWY_ADDR+1),EEGET(GTWY_ADDR+2),EEGET(GTWY_ADDR+3));
+						sprintf((char *)buffer+strlen(buffer), "<tr><td>Subnet Mask</td><td>%d.%d.%d.%d</td></tr>", EEGET(SNET_MASK+0),EEGET(SNET_MASK+1),EEGET(SNET_MASK+2),EEGET(SNET_MASK+3));
+						sprintf((char *)buffer+strlen(buffer), "<tr><td>MAC Address</td><td>%.2X:%.2X:%.2X:%.2X:%.2X:%.2X</td></tr>", EEGET(MAC_ADDR+0),EEGET(MAC_ADDR+1),EEGET(MAC_ADDR+2),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3));
+						strcat((char *)buffer, "</table>");
+				    } else {
+				        strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
+				        strcat_P((char *)buffer, PSTR("<p><strong>Current Message:</strong>"));
+				        strcat((char *)buffer, message);
+				        strcat_P((char *)buffer, PSTR("</p>"));
+				    }				
+				    strcat_P((char *)buffer, HTML_FOOTER);
+				}				
 				if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
 					
 				disconnect(0);
@@ -158,6 +194,5 @@ int main(void)
 			i = SIGNW;
 		}			
 	    write_buffer(frame_buffer);
-		//_delay_ms(10);
 	}
 }

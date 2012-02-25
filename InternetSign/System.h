@@ -36,12 +36,18 @@
 #define MAC_ADDR  0x0004  // 6 bytes
 #define SNET_MASK 0x000C  // 4 bytes
 #define GTWY_ADDR 0x0010  // 4 bytes
-#define MSG_ADDR  0x0020  // 256 bytes
+#define USER_ADDR 0x0020  // 32 bytes
+#define PWD_ADDR  0x0040  // 64 bytes
+#define MSG_ADDR  0x0060  // 256 bytes
 
 #define output_low(port,pin) port &= ~(1<<pin)
 #define output_high(port,pin) port |= (1<<pin)
 #define set_input(portdir,pin) portdir &= ~(1<<pin)
 #define set_output(portdir,pin) portdir |= (1<<pin)
+
+const static PROGMEM char HTTP_OK[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n";
+const static PROGMEM char HTTP_AUTH_REQUIRED[] = "HTTP/1.0 401 Authorization Required\r\nWWW-Authenticate: Basic realm=\"Secure Area\"\r\nContent-Type: text/plain\r\n\r\nAuthorization Required";
+const static PROGMEM char HTTP_NOT_FOUND[] = "HTTP/1.0 404 Not Found\r\nContent-Type:text/plain\r\n\r\nThe page you requested does not exist";
 
 const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
 "<html>"

@@ -117,20 +117,34 @@ void write_bytes(uint16_t address, const unsigned char* data, uint8_t length) {
 	}
 }
 
-void set_ip(unsigned char* ip_addr) {
-    write_bytes(SIPR, ip_addr, 4);
+void set_ip(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
+    SPI_Write(SIPR + 0, n1);
+	SPI_Write(SIPR + 1, n2);
+	SPI_Write(SIPR + 2, n3);
+	SPI_Write(SIPR + 3, n4);
 }
 
-void set_gateway(unsigned char* gateway_addr) {
-    write_bytes(GAR, gateway_addr, 4);
+void set_gateway(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
+    SPI_Write(GAR + 0, n1);
+	SPI_Write(GAR + 1, n2);
+	SPI_Write(GAR + 2, n3);
+	SPI_Write(GAR + 3, n4);
 }
 
-void set_mac(unsigned char* mac_addr) {
-    write_bytes(SAR, mac_addr, 6);
+void set_mac(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4, uint8_t n5, uint8_t n6) {
+    SPI_Write(SAR + 0, n1);
+	SPI_Write(SAR + 1, n2);
+	SPI_Write(SAR + 2, n3);
+	SPI_Write(SAR + 3, n4);
+	SPI_Write(SAR + 4, n5);
+	SPI_Write(SAR + 5, n6);
 }
 
-void set_subnet(unsigned char* subnet_mask) {
-    write_bytes(SUBR, subnet_mask, 4);
+void set_subnet(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
+    SPI_Write(SUBR + 0, n1);
+	SPI_Write(SUBR + 1, n2);
+	SPI_Write(SUBR + 2, n3);
+	SPI_Write(SUBR + 3, n4);
 }
 
 void close(uint8_t sock) {

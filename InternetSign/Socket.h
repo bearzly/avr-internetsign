@@ -36,10 +36,10 @@
 #define MR_MULTI	  0x80	  // support multicating
 
 void Init_Wiznet();
-void set_ip();
-void set_gateway();
-void set_mac();
-void set_subnet();
+void set_ip(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4);
+void set_gateway(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4);
+void set_mac(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4, uint8_t n5, uint8_t n6);
+void set_subnet(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4);
 
 void close(uint8_t sock);
 void disconnect(uint8_t sock);

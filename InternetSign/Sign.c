@@ -6,12 +6,15 @@
  */ 
 #include <avr/io.h>
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
+
 #include <string.h>
+
 #include "Font.h"
 #include "System.h"
 #include "Sign.h"
 
-#include <avr/delay.h>
+#include <util/delay.h>
 
 #define PREFIX_SIZE 3
 #define CMD_PREFIX 0x04
@@ -34,18 +37,59 @@
 
 #define SET_BUFFER(buffer, data, idx) if (0 < idx && idx < SIGNW) buffer[idx] = data
 
-void delay() {
-    for (int i = 0; i < 100; i++);
+static char g_message[MSG_LENGTH];
+static uint8_t g_frame_buffer[SIGNW];
+static int16_t g_current_index = SIGNW;
+static int16_t g_pixel_extent;
+
+void set_message(const char* msg) {
+	strcpy(g_message, msg);
+	g_pixel_extent = calc_extent(msg);
+	g_current_index = SIGNW;
+	eeprom_update_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
+}
+
+const char* get_message() {
+	return g_message;
+}
+
+void next_frame() {
+	update_buffer(g_message, g_frame_buffer, g_current_index);
+	g_current_index--;
+	if (g_current_index < -g_pixel_extent) {
+		g_current_index = SIGNW;
+	}
+	write_buffer(g_frame_buffer);
+}
+
+int calc_extent(const char* str) {
+	int length = 0;
+	const int size = strlen(str);
+	for (int i = 0; i < size; i++) {
+		if (str[i] == ' ') {
+			length += 2;
+		} else {
+			length += CHARW + 1;
+		}
+	}
+	return length;
+}
+
+void set_speed(uint8_t speed) {
+	if (speed < 1) {
+		speed = 1;
+	} else if (speed > 10) {
+		speed = 10;
+	}
+	OCR1A = 18000 + 4000 * (10 - speed);
 }
 
 void deselect() {
     output_high(SIGN_CS_PORT, SIGN_CS);
-    //delay();
 }    
 
 void select() {
     output_low(SIGN_CS_PORT, SIGN_CS);
-    //delay();
 }
 
 void clock_pulse() {
@@ -168,6 +212,9 @@ void initialize_sign() {
     write_command(LED_ON);
     write_command(RC_MASTER_MODE);
     write_command(COM_OPTION);
+	
+	eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
+	g_pixel_extent = calc_extent(g_message);
 }
 
 void set_brightness(uint8_t brightness) {

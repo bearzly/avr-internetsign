@@ -100,7 +100,8 @@ unsigned char SPI_Read(uint16_t addr) {
 	return SPDR;
 }
 
-void Init_Wiznet() {
+void init_wiznet()
+{
   // Setting the Wiznet W5100 Mode Register: 0x0000
   SPI_Write(MR,0x80);            // MR = 0b10000000;
   
@@ -109,6 +110,10 @@ void Init_Wiznet() {
   // Setting the Wiznet W5100 RX and TX Memory Size (2KB),
   SPI_Write(RMSR,NET_MEMALLOC);
   SPI_Write(TMSR,NET_MEMALLOC);
+  
+  close(0);
+  disconnect(0);
+  _delay_ms(10);
 }
 
 void write_bytes(uint16_t address, const unsigned char* data, uint8_t length) {

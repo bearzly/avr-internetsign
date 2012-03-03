@@ -56,6 +56,15 @@ void urldecode(char* dest, const char* src, int size) {
 	dest[j] = '\0';
 }
 
+void set_speed(uint8_t speed) {
+	if (speed < 1) {
+		speed = 1;
+	} else if (speed > 10) {
+		speed = 10;
+	}
+	OCR1A = 18000 + 4000 * (10 - speed);
+}
+
 int main(void)
 {	
 	uint8_t status;
@@ -69,6 +78,11 @@ int main(void)
 	
 	SPCR = (1<<SPE)|(1<<MSTR);
 	SPSR |= (1<<SPI2X);
+	
+	TCCR1B |= (1 << CS10);
+	TCCR1B |= (1 << WGM12);
+	
+	set_speed(5);
 	
 	Init_Wiznet();
 	
@@ -99,6 +113,8 @@ int main(void)
 		EEGET(SNET_MASK + 3)
 	);
 
+    eeprom_read_block(message, MSG_ADDR, MSG_LENGTH);
+
     initialize_sign();
 	set_brightness(4);
     
@@ -113,7 +129,7 @@ int main(void)
 	
 	int16_t i = SIGNW;
 	while (1) {
-		status = sockstat();
+		status = sockstat(0);
 		switch(status) {
 			case SOCK_CLOSED:
 			    if (socket(0, MR_TCP, HTTP_PORT) > 0) {
@@ -129,6 +145,7 @@ int main(void)
 					size = recv(0, buffer + len, MAX_BUFFER_SIZE - len);
 					len += size;
 				}
+
 				buffer[len >= MAX_BUFFER_SIZE - 1 ? MAX_BUFFER_SIZE - 1 : len] = '\0';
 					
 				char* method = strtok((char *)buffer, " ");
@@ -139,6 +156,7 @@ int main(void)
 					int size = strlen(newmessage);
 					urldecode(message, newmessage+1, size);
 					message[size] = '\0';
+					eeprom_update_block(message, MSG_ADDR, MSG_LENGTH);
 					i = SIGNW;
 					
 					length = 0;
@@ -169,13 +187,14 @@ int main(void)
 				    } else {
 				        strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
 				        strcat_P((char *)buffer, PSTR("<p><strong>Current Message:</strong>"));
-				        strcat((char *)buffer, message);
+						sprintf((char*)buffer+strlen(buffer), "%d", len);
 				        strcat_P((char *)buffer, PSTR("</p>"));
 				    }				
 				    strcat_P((char *)buffer, HTML_FOOTER);
 				}				
 				if (send(0, buffer, strlen((char *)buffer)) <= 0) break;
 					
+				close(0);
 				disconnect(0);
 				break;
 			case SOCK_FIN_WAIT:
@@ -187,12 +206,15 @@ int main(void)
 				break;
 		}
 		
-		
-		update_buffer(message, frame_buffer, i);
-		i--;
-		if (i < -length) {
-			i = SIGNW;
-		}			
-	    write_buffer(frame_buffer);
+		if (TIFR1 & (1 << OCF1A)) {
+			update_buffer(message, frame_buffer, i);
+		    i--;
+		    if (i < -length) {
+			    i = SIGNW;
+		    }			
+	        write_buffer(frame_buffer);
+			
+			TIFR1 = (1 << OCF1A);
+		}
 	}
 }

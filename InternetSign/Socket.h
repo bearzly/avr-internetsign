@@ -47,6 +47,6 @@ uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port);
 uint8_t listen(uint8_t sock);
 uint16_t send(uint8_t sock, const uint8_t* buf, uint16_t len);
 uint16_t recv(uint8_t sock, uint8_t* buf, uint16_t len);
-uint8_t sockstat();
+uint8_t sockstat(uint8_t sock);
 
 #endif /* SOCKET_H_ */

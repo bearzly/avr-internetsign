@@ -56,9 +56,7 @@ void urldecode(char* dest, const char* src, int size) {
 }
 
 int main(void)
-{	
-	uint8_t status;
-	
+{		
 	set_output(SIGN_DATA_DDR, SIGN_SCK);
     set_output(SIGN_DATA_DDR, SIGN_DATA);
     set_output(SIGN_CS_DDR, SIGN_CS);
@@ -102,9 +100,10 @@ int main(void)
 	);
 
     initialize_sign();
-	set_brightness(4);
-	set_speed(5);
+	set_brightness(EEGET(BRGHT_ADDR));
+	set_speed(EEGET(SPEED_ADDR));
     
+	uint8_t status;
 	while (1) {
 		status = sockstat(0);
 		switch(status) {
@@ -116,6 +115,7 @@ int main(void)
 				}
 				break;
 			case SOCK_ESTABLISHED:;
+			    _delay_ms(10);
 				uint16_t len = 0;
 				uint16_t size = 1;
 				while (size && (len < MAX_BUFFER_SIZE)) {
@@ -131,11 +131,10 @@ int main(void)
 				const char* newmessage = strchr(post, '=');
 				if (newmessage) {
 					int size = strlen(newmessage);
-					char* decoded = malloc(size + 1);
-					urldecode(decoded, newmessage+1, size);
-					decoded[size] = '\0';
-					set_message(decoded);
-					free(decoded);
+					char* message_buf = get_message();
+					urldecode(message_buf, newmessage+1, size);
+					message_buf[size] = '\0';
+					store_message();
 				}
 				
 				int isConfig = strcmp_P(path, PSTR("/config")) == 0;
@@ -147,12 +146,15 @@ int main(void)
 				    strcpy_P((char *)buffer, HTTP_OK);
 				    strcat_P((char *)buffer, HTML_HEADER);
 				    if (isConfig) {
-					    strcat_P((char *)buffer, PSTR("<h1>Configuration</h1><table>"));
-						sprintf((char *)buffer+strlen((char *)buffer), "<tr><td>IP Address</td><td>%d.%d.%d.%d</td></tr>", EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3));
-						sprintf((char *)buffer+strlen((char *)buffer), "<tr><td>Gateway Address</td><td>%d.%d.%d.%d</td></tr>", EEGET(GTWY_ADDR+0),EEGET(GTWY_ADDR+1),EEGET(GTWY_ADDR+2),EEGET(GTWY_ADDR+3));
-						sprintf((char *)buffer+strlen((char *)buffer), "<tr><td>Subnet Mask</td><td>%d.%d.%d.%d</td></tr>", EEGET(SNET_MASK+0),EEGET(SNET_MASK+1),EEGET(SNET_MASK+2),EEGET(SNET_MASK+3));
-						sprintf((char *)buffer+strlen((char *)buffer), "<tr><td>MAC Address</td><td>%.2X:%.2X:%.2X:%.2X:%.2X:%.2X</td></tr>", EEGET(MAC_ADDR+0),EEGET(MAC_ADDR+1),EEGET(MAC_ADDR+2),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3));
-						strcat((char *)buffer, "</table>");
+					    strcat_P((char *)buffer, PSTR("<h1>Configuration</h1><form action='/config' method='post'><table>"));
+						sprintf_P((char *)buffer+strlen((char *)buffer), CONFIG_ROW, "IP Address", EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3), "ip");
+						sprintf_P((char *)buffer+strlen((char *)buffer), CONFIG_ROW, "Gateway Address", EEGET(GTWY_ADDR+0),EEGET(GTWY_ADDR+1),EEGET(GTWY_ADDR+2),EEGET(GTWY_ADDR+3), "gtwy");
+						sprintf_P((char *)buffer+strlen((char *)buffer), CONFIG_ROW, "Subnet Mask", EEGET(SNET_MASK+0),EEGET(SNET_MASK+1),EEGET(SNET_MASK+2),EEGET(SNET_MASK+3), "snet");
+						sprintf_P((char *)buffer+strlen((char *)buffer), MAC_ROW, EEGET(MAC_ADDR+0),EEGET(MAC_ADDR+1),EEGET(MAC_ADDR+2),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3));
+						sprintf_P((char *)buffer+strlen((char *)buffer), PSTR("</table><br>"));
+						sprintf_P((char *)buffer+strlen((char *)buffer), OPTION_BOX, "Brightness (1-16): ", "brt", EEGET((uint8_t *)BRGHT_ADDR));
+						sprintf_P((char *)buffer+strlen((char *)buffer), OPTION_BOX, "Speed (1-10): ", "speed", EEGET((uint8_t *)SPEED_ADDR));
+						strcat_P((char *)buffer+strlen((char *)buffer), PSTR("<br><input type='submit' value='Save'></form>"));
 				    } else {
 				        strcat_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
 				        strcat_P((char *)buffer, PSTR("<p><strong>Current Message:</strong>"));
@@ -179,7 +181,5 @@ int main(void)
 			next_frame();			
 			TIFR1 = (1 << OCF1A);
 		}
-		
-		_delay_ms(20);
 	}
 }

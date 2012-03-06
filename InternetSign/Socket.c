@@ -278,7 +278,6 @@ uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
 	
 	SPI_Write(S0_CR, CR_RECV);
 	while (SPI_Read(S0_CR));
-	_delay_us(5);
 	
 	return bytes_to_read;
 }

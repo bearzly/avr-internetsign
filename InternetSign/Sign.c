@@ -35,21 +35,20 @@
 #define DATA_SIZE 4
 
 
-#define SET_BUFFER(buffer, data, idx) if (0 < idx && idx < SIGNW) buffer[idx] = data
+#define SET_BUFFER(buffer, data, idx) if (0 <= idx && idx < SIGNW) buffer[idx] = data
 
 static char g_message[MSG_LENGTH];
 static uint8_t g_frame_buffer[SIGNW];
 static int16_t g_current_index = SIGNW;
 static int16_t g_pixel_extent;
 
-void set_message(const char* msg) {
-	strcpy(g_message, msg);
-	g_pixel_extent = calc_extent(msg);
+void store_message() {
+	g_pixel_extent = calc_extent(g_message);
 	g_current_index = SIGNW;
 	eeprom_update_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
 }
 
-const char* get_message() {
+char* get_message() {
 	return g_message;
 }
 
@@ -218,5 +217,11 @@ void initialize_sign() {
 }
 
 void set_brightness(uint8_t brightness) {
-	write_command((PWM_DUTY_4 & 0xF0) + brightness);
+	if (brightness < 1) {
+		brightness = 1;
+	} else if (brightness > 16) {
+		brightness = 16;
+	}
+	write_command((PWM_DUTY_4 & 0xF0) + (brightness - 1));
+	eeprom_update_byte((uint8_t *)BRGHT_ADDR, brightness);
 }

@@ -14,8 +14,8 @@
 #define SIGNW 4 * 8
 
 void next_frame();
-void set_message(const char* msg);
-const char* get_message();
+void store_message();
+char* get_message();
 int calc_extent(const char* msg);
 void set_speed(uint8_t speed);
 void update_buffer(const char* msg, uint8_t *buffer, int16_t idx);

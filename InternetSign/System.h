@@ -32,13 +32,15 @@
 #define SPI_MISO PORTB4
 
 // EEPROM addresses
-#define IP_ADDR   0x0000  // 4 bytes
-#define MAC_ADDR  0x0004  // 6 bytes
-#define SNET_MASK 0x000C  // 4 bytes
-#define GTWY_ADDR 0x0010  // 4 bytes
-#define USER_ADDR 0x0020  // 32 bytes
-#define PWD_ADDR  0x0040  // 64 bytes
-#define MSG_ADDR  0x0060  // 256 bytes
+#define IP_ADDR    0x0000  // 4 bytes
+#define MAC_ADDR   0x0004  // 6 bytes
+#define SNET_MASK  0x000C  // 4 bytes
+#define GTWY_ADDR  0x0010  // 4 bytes
+#define BRGHT_ADDR 0x0014  // 1 byte
+#define SPEED_ADDR 0x0015  // 1 byte
+#define USER_ADDR  0x0020  // 32 bytes
+#define PWD_ADDR   0x0040  // 64 bytes
+#define MSG_ADDR   0x0060  // 256 bytes
 
 #define output_low(port,pin) port &= ~(1<<pin)
 #define output_high(port,pin) port |= (1<<pin)
@@ -67,7 +69,11 @@ const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
 "   <div id='container'>"
 "	<div id='content'>";
 
-const static PROGMEM char HTML_FOOTER[] = "	</div></div>"
+const static PROGMEM char CONFIG_ROW[] = "<tr><td>%s</td><td>%d.%d.%d.%d</td><td><input type='text' name='%s'></td></tr>";
+const static PROGMEM char MAC_ROW[] = "<tr><td>MAC Address</td><td>%.2X:%.2X:%.2X:%.2X:%.2X:%.2X</td><td><input type='text' name='mac'></td></tr>";
+const static PROGMEM char OPTION_BOX[] = "<div>%s<input type='text' name='%s' style='width:20px' maxlength='2' value='%d'></div>";
+
+const static PROGMEM char HTML_FOOTER[] = "</div></div>"
 "</body>"
 "</html>";
 

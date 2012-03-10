@@ -34,6 +34,9 @@
 #define ADR_SIZE 7
 #define DATA_SIZE 4
 
+#define SPEED_BASE 18000
+#define SPEED_MULTIPLIER 5000
+
 
 #define SET_BUFFER(buffer, data, idx) if (0 <= idx && idx < SIGNW) buffer[idx] = data
 
@@ -80,7 +83,7 @@ void set_speed(uint8_t speed) {
 	} else if (speed > 10) {
 		speed = 10;
 	}
-	OCR1A = 18000 + 4000 * (10 - speed);
+	OCR1A = SPEED_BASE + SPEED_MULTIPLIER * (10 - speed);
 }
 
 void deselect() {

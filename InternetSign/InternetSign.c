@@ -20,6 +20,7 @@
 #include <util/delay.h>
 
 #define EEGET(addr) eeprom_read_byte((const uint8_t*)addr)
+#define IS_BYTE(x) ((x >= 0) && (x <= 255))
 
 #define HTTP_PORT         80       // TCP/IP Port for HTTP
 
@@ -124,23 +125,107 @@ int main(void)
 				}
 
 				buffer[len >= MAX_BUFFER_SIZE - 1 ? MAX_BUFFER_SIZE - 1 : len] = '\0';
-					
+										
 				char* method = strtok((char *)buffer, " ");
 				char* path = strtok(0, " ");
-				char* post = strstr(path + strlen(path) + 1, "\r\n\r\n");
-				const char* newmessage = strchr(post, '=');
-				if (newmessage) {
-					int size = strlen(newmessage);
-					char* message_buf = get_message();
-					urldecode(message_buf, newmessage+1, size);
-					message_buf[size] = '\0';
-					store_message();
-				}
 				
 				int isConfig = strcmp_P(path, PSTR("/config")) == 0;
-				int isOther = !isConfig && (strcmp_P(path, PSTR("/")) != 0);
+				int isRoot = strcmp_P(path, PSTR("/")) == 0;
 				
-				if (isOther) {
+				if (strcmp_P(method, PSTR("POST")) == 0) {
+				
+				    char* post = strstr(path + strlen(path) + 1, "\r\n\r\n") + 4;
+				    char* param = strtok(post, "&");
+				
+				    while (param != NULL) {
+					    char* equals = strchr(param, '=');
+					    char* nextParam = strtok(NULL, "&");
+					    if ((equals != NULL) && (((nextParam - equals) > 2) || (nextParam == NULL))) {
+						    *equals = '\0';
+							const char* value = equals + 1;
+						    const size_t size = strlen(value);
+						    if (isRoot) {
+							    if (strcmp_P(param, PSTR("message")) == 0) {
+								    char* message_buf = get_message();
+								    urldecode(message_buf, value, size);
+								    store_message();
+							    }
+						    } else if (isConfig) {
+							    if (strcmp_P(param, PSTR("ip"))== 0) {
+								    int b1, b2, b3, b4;
+									int ret = sscanf_P(value, PSTR("%3d.%3d.%3d.%3d"), &b1, &b2, &b3, &b4);
+									if (ret == 4) {
+										if (IS_BYTE(b1) && IS_BYTE(b2) && IS_BYTE(b3) && IS_BYTE(b4)) {
+											set_ip((uint8_t)b1, (uint8_t)b2, (uint8_t)b3, (uint8_t)b4);
+											eeprom_update_byte((uint8_t*)IP_ADDR + 0, (uint8_t)b1);
+											eeprom_update_byte((uint8_t*)IP_ADDR + 1, (uint8_t)b2);
+											eeprom_update_byte((uint8_t*)IP_ADDR + 2, (uint8_t)b3);
+											eeprom_update_byte((uint8_t*)IP_ADDR + 3, (uint8_t)b4);
+										}
+									}
+									
+							    } else if (strcmp_P(param, PSTR("mac")) == 0) {
+								    int b1, b2, b3, b4, b5, b6;
+									int ret = sscanf_P(value, PSTR("%2X%%3A%2X%%3A%2X%%3A%2X%%3A%2X%%3A%2X"), &b1, &b2, &b3, &b4, &b5, &b6);
+									if (ret == 6) {
+										if (IS_BYTE(b1) && IS_BYTE(b2) && IS_BYTE(b3) && IS_BYTE(b4) && IS_BYTE(b5) && IS_BYTE(b6)) {
+											set_mac((uint8_t)b1, (uint8_t)b2, (uint8_t)b3, (uint8_t)b4, (uint8_t)b5, (uint8_t)b6);
+											eeprom_update_byte((uint8_t*)MAC_ADDR + 0, (uint8_t)b1);
+											eeprom_update_byte((uint8_t*)MAC_ADDR + 1, (uint8_t)b2);
+											eeprom_update_byte((uint8_t*)MAC_ADDR + 2, (uint8_t)b3);
+											eeprom_update_byte((uint8_t*)MAC_ADDR + 3, (uint8_t)b4);
+											eeprom_update_byte((uint8_t*)MAC_ADDR + 4, (uint8_t)b5);
+											eeprom_update_byte((uint8_t*)MAC_ADDR + 5, (uint8_t)b6);
+										}
+									}
+							    } else if (strcmp_P(param, PSTR("gtwy")) == 0) {
+								    int b1, b2, b3, b4;
+									int ret = sscanf_P(value, PSTR("%3d.%3d.%3d.%3d"), &b1, &b2, &b3, &b4);
+									if (ret == 4) {
+										if (IS_BYTE(b1) && IS_BYTE(b2) && IS_BYTE(b3) && IS_BYTE(b4)) {
+											set_gateway((uint8_t)b1, (uint8_t)b2, (uint8_t)b3, (uint8_t)b4);
+											eeprom_update_byte((uint8_t*)GTWY_ADDR + 0, (uint8_t)b1);
+											eeprom_update_byte((uint8_t*)GTWY_ADDR + 1, (uint8_t)b2);
+											eeprom_update_byte((uint8_t*)GTWY_ADDR + 2, (uint8_t)b3);
+											eeprom_update_byte((uint8_t*)GTWY_ADDR + 3, (uint8_t)b4);
+										}
+									}
+							    } else if (strcmp_P(param, PSTR("snet")) == 0) {
+								    int b1, b2, b3, b4;
+									int ret = sscanf_P(value, PSTR("%3d.%3d.%3d.%3d"), &b1, &b2, &b3, &b4);
+									if (ret == 4) {
+										if (IS_BYTE(b1) && IS_BYTE(b2) && IS_BYTE(b3) && IS_BYTE(b4)) {
+											set_ip((uint8_t)b1, (uint8_t)b2, (uint8_t)b3, (uint8_t)b4);
+											eeprom_update_byte((uint8_t*)SNET_MASK + 0, (uint8_t)b1);
+											eeprom_update_byte((uint8_t*)SNET_MASK + 1, (uint8_t)b2);
+											eeprom_update_byte((uint8_t*)SNET_MASK + 2, (uint8_t)b3);
+											eeprom_update_byte((uint8_t*)SNET_MASK + 3, (uint8_t)b4);
+										}
+									}
+							    } else if (strcmp_P(param, PSTR("brt")) == 0) {
+								    int brightness;
+									if (sscanf_P(value, PSTR("%d"), &brightness) == 1) {
+									    if ((brightness >= 1) && (brightness <= 16)) {
+										    set_brightness(brightness);
+										    eeprom_update_byte((uint8_t*)BRGHT_ADDR, (uint8_t)brightness);
+										}										
+									}	
+							    } else if (strcmp_P(param, PSTR("speed") == 0)) {
+								    int speed;
+									if (sscanf_P(value, PSTR("%d"), &speed) == 1) {
+									    if ((speed >= 1) && (speed <= 10)) {
+										    set_speed(speed);
+										    eeprom_update_byte((uint8_t*)SPEED_ADDR, (uint8_t)speed);
+										}										
+									}										
+							    }												
+						    }
+					    }
+					    param = nextParam;
+				    }
+				}				
+				
+				if (!isConfig && !isRoot) {
 					strcpy_P((char *)buffer, HTTP_NOT_FOUND);
 				} else {
 				    strcpy_P((char *)buffer, HTTP_OK);
@@ -150,7 +235,7 @@ int main(void)
 						sprintf_P((char *)buffer+strlen((char *)buffer), CONFIG_ROW, "IP Address", EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3), "ip");
 						sprintf_P((char *)buffer+strlen((char *)buffer), CONFIG_ROW, "Gateway Address", EEGET(GTWY_ADDR+0),EEGET(GTWY_ADDR+1),EEGET(GTWY_ADDR+2),EEGET(GTWY_ADDR+3), "gtwy");
 						sprintf_P((char *)buffer+strlen((char *)buffer), CONFIG_ROW, "Subnet Mask", EEGET(SNET_MASK+0),EEGET(SNET_MASK+1),EEGET(SNET_MASK+2),EEGET(SNET_MASK+3), "snet");
-						sprintf_P((char *)buffer+strlen((char *)buffer), MAC_ROW, EEGET(MAC_ADDR+0),EEGET(MAC_ADDR+1),EEGET(MAC_ADDR+2),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+3));
+						sprintf_P((char *)buffer+strlen((char *)buffer), MAC_ROW, EEGET(MAC_ADDR+0),EEGET(MAC_ADDR+1),EEGET(MAC_ADDR+2),EEGET(MAC_ADDR+3),EEGET(MAC_ADDR+4),EEGET(MAC_ADDR+5));
 						sprintf_P((char *)buffer+strlen((char *)buffer), PSTR("</table><br>"));
 						sprintf_P((char *)buffer+strlen((char *)buffer), OPTION_BOX, "Brightness (1-16): ", "brt", EEGET((uint8_t *)BRGHT_ADDR));
 						sprintf_P((char *)buffer+strlen((char *)buffer), OPTION_BOX, "Speed (1-10): ", "speed", EEGET((uint8_t *)SPEED_ADDR));

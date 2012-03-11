@@ -71,7 +71,7 @@ const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
 
 const static PROGMEM char CONFIG_ROW[] = "<tr><td>%s</td><td>%d.%d.%d.%d</td><td><input type='text' name='%s'></td></tr>";
 const static PROGMEM char MAC_ROW[] = "<tr><td>MAC Address</td><td>%.2X:%.2X:%.2X:%.2X:%.2X:%.2X</td><td><input type='text' name='mac'></td></tr>";
-const static PROGMEM char OPTION_BOX[] = "<div>%s<input type='text' name='%s' style='width:20px' maxlength='2' value='%d'></div>";
+const static PROGMEM char OPTION_BOX[] = "<tr><td>%s</td><td><input type='text' name='%s' style='width:20px' maxlength='2' value='%d'></td></tr>";
 
 const static PROGMEM char HTML_FOOTER[] = "</div></div>"
 "</body>"

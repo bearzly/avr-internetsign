@@ -71,7 +71,13 @@ int calc_extent(const char* str) {
 		if (str[i] == ' ') {
 			length += 2;
 		} else {
-			length += CHARW + 1;
+			int j;
+			for (j = 0; j < CHARW; j++) {
+				if (pgm_read_byte(Font5x7 + (str[i] - 32) * 5 + j) == 0) {
+					break;
+				}
+			}
+			length += j + 1;
 		}
 	}
 	return length;
@@ -84,6 +90,7 @@ void set_speed(uint8_t speed) {
 		speed = 10;
 	}
 	OCR1A = SPEED_BASE + SPEED_MULTIPLIER * (10 - speed);
+	eeprom_update_byte((uint8_t*)SPEED_ADDR, speed);
 }
 
 void deselect() {
@@ -186,8 +193,9 @@ void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
 			SET_BUFFER(buffer, 0, real_pos + idx + 1);
 		} else {
 			for (int j = 0; j < 5; j++) {
-				real_pos++;
                 uint8_t data = pgm_read_byte(Font5x7 + (c - 32) * 5 + j);
+				if (data == 0) break;
+				real_pos++;
                 SET_BUFFER(buffer, data, real_pos + idx);
             }
 			real_pos ++;

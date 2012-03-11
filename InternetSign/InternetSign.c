@@ -297,7 +297,6 @@ int main(void)
 									if (sscanf_P(value, PSTR("%d"), &brightness) == 1) {
 									    if ((brightness >= 1) && (brightness <= 16)) {
 										    set_brightness(brightness);
-										    eeprom_update_byte((uint8_t*)BRGHT_ADDR, (uint8_t)brightness);
 										}										
 									}	
 							    } else if (strcmp_P(param, PSTR("speed")) == 0) {
@@ -305,7 +304,6 @@ int main(void)
 									if (sscanf_P(value, PSTR("%d"), &speed) == 1) {
 									    if ((speed >= 1) && (speed <= 10)) {
 										    set_speed(speed);
-										    eeprom_update_byte((uint8_t*)SPEED_ADDR, (uint8_t)speed);
 										}										
 									}										
 							    }												

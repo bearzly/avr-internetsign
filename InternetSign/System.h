@@ -13,7 +13,7 @@
 
 #define F_CPU 1000000UL
 
-#define MSG_LENGTH 255
+#define MSG_LENGTH 256
 
 #define SIGN_CS_PORT PORTB
 #define SIGN_CS_DDR  DDRB

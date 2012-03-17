@@ -8,6 +8,8 @@
 #include <avr/io.h>
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
+#include <avr/interrupt.h>
+#include <avr/signal.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -119,13 +121,19 @@ int main(void)
     set_output(SIGN_CS_DDR, SIGN_CS);
     set_output(SPI_DDR, SPI_MOSI);
 	set_output(SPI_DDR, SPI_SCK);
-	set_output(SPI_DDR, SPI_CS);
 	
 	SPCR = (1<<SPE)|(1<<MSTR);
 	SPSR |= (1<<SPI2X);
 	
 	TCCR1B |= (1 << CS10);
 	TCCR1B |= (1 << WGM12);
+	
+	set_output(SPI_DDR, SPI_CS);
+	set_input(DDRD, PD0);
+	output_low(PORTD, PD0);
+	PCICR |= (1 << PCIE2);
+	PCMSK2 |= (1 << PCINT16);
+	sei();
 	
 	init_wiznet();
 
@@ -356,4 +364,9 @@ int main(void)
 			TIFR1 = (1 << OCF1A);
 		}
 	}
+}
+
+
+ISR(PCINT2_vect) {
+	
 }

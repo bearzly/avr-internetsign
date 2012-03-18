@@ -9,7 +9,6 @@
 #ifndef SYSTEM_H_
 #define SYSTEM_H_
 
-#include <avr/pgmspace.h>
 
 #define F_CPU 1000000UL
 
@@ -23,13 +22,6 @@
 #define SIGN_DATA_DDR  DDRD
 #define SIGN_SCK       PD7
 #define SIGN_DATA      PD6
-
-#define SPI_PORT PORTB
-#define SPI_DDR  DDRB
-#define SPI_CS   PORTB2
-#define SPI_SCK  PORTB5
-#define SPI_MOSI PORTB3
-#define SPI_MISO PORTB4
 
 // EEPROM addresses
 #define IP_ADDR    0x0000  // 4 bytes
@@ -47,35 +39,7 @@
 #define set_input(portdir,pin) portdir &= ~(1<<pin)
 #define set_output(portdir,pin) portdir |= (1<<pin)
 
-const static PROGMEM char HTTP_OK[] = "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n";
-const static PROGMEM char HTTP_AUTH_REQUIRED[] = "HTTP/1.0 401 Authorization Required\r\nWWW-Authenticate: Basic realm=\"Secure Area\"\r\nContent-Type: text/plain\r\n\r\nAuthorization Required";
-const static PROGMEM char HTTP_NOT_FOUND[] = "HTTP/1.0 404 Not Found\r\nContent-Type:text/plain\r\n\r\nThe page you requested does not exist";
-
-const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
-"<html>"
-"<head>"
-"	<title>Internet Sign</title>"
-"   <style type='text/css'>"
-"body{font-family:Arial;background:#eee;padding:10px 0}h1{color:#338}#header{background:#777;padding:10px 0;border-bottom:7px solid #8ae;}#header ul{padding:0;margin:0;margin-left:3px}#header li{display:inline;background:#555;padding:7px 5px;border:1px #222}#header a{color:#ddd;text-decoration:none}#header a:hover{text-decoration:underline}#container{font-size: 10pt;background:#fff;padding:10px 0}h1{margin:0}#content{padding:5px 10px}#body{width:65%;margin:auto;border:2px solid #ddd}"
-"   </style>"
-"</head>"
-"<body>"
-"   <div id='body'>"
-"	<div id='header'>"
-"		<ul>"
-"			<li><a href='/'>Home</a></li>"
-"			<li><a href='/config'>Configuration</a></li>"
-"		</ul>"
-"	</div>"
-"   <div id='container'>"
-"	<div id='content'>";
-
-const static PROGMEM char CONFIG_ROW[] = "<tr><td>%s</td><td>%d.%d.%d.%d</td><td><input type='text' name='%s'></td></tr>";
-const static PROGMEM char MAC_ROW[] = "<tr><td>MAC Address</td><td>%.2X:%.2X:%.2X:%.2X:%.2X:%.2X</td><td><input type='text' name='mac'></td></tr>";
-const static PROGMEM char OPTION_BOX[] = "<tr><td>%s</td><td><input type='text' name='%s' style='width:20px' maxlength='2' value='%d'></td></tr>";
-
-const static PROGMEM char HTML_FOOTER[] = "</div></div></div>"
-"</body>"
-"</html>";
+#define EEGET(addr) eeprom_read_byte((const uint8_t*)addr)
+#define IS_BYTE(x) ((x >= 0) && (x <= 255))
 
 #endif /* SYSTEM_H_ */

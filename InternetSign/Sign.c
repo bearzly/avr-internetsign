@@ -5,7 +5,6 @@
  *  Author: Benjamin
  */ 
 #include <avr/io.h>
-#include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
 #include <string.h>
@@ -216,6 +215,10 @@ void write_buffer(const uint8_t* buffer) {
 }
 
 void initialize_sign() {
+	set_output(SIGN_DATA_DDR, SIGN_SCK);
+    set_output(SIGN_DATA_DDR, SIGN_DATA);
+    set_output(SIGN_CS_DDR, SIGN_CS);
+	
 	deselect();
     
     write_command(SYS_EN);

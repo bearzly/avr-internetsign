@@ -8,10 +8,11 @@
 
 #include <avr/io.h>
 #include <string.h>
-#include <util/delay.h>
-#include <avr/pgmspace.h>
 
+#include "System.h"
 #include "Socket.h"
+
+#include <util/delay.h>
 
 #define SPI_PORT PORTB
 #define SPI_DDR  DDRB
@@ -102,18 +103,25 @@ unsigned char SPI_Read(uint16_t addr) {
 
 void init_wiznet()
 {
-  // Setting the Wiznet W5100 Mode Register: 0x0000
-  SPI_Write(MR,0x80);            // MR = 0b10000000;
+	SPI_DDR |= (1 << SPI_MOSI);
+	SPI_DDR |= (1 << SPI_SCK);
+	SPI_DDR |= (1 << SPI_CS);
+	
+    SPCR = (1<<SPE)|(1<<MSTR);
+    SPSR |= (1<<SPI2X);
+	
+    // Setting the Wiznet W5100 Mode Register: 0x0000
+    SPI_Write(MR,0x80);            // MR = 0b10000000;
   
-  _delay_ms(10);
+    _delay_ms(10);
 
-  // Setting the Wiznet W5100 RX and TX Memory Size (2KB),
-  SPI_Write(RMSR,NET_MEMALLOC);
-  SPI_Write(TMSR,NET_MEMALLOC);
-  
-  close(0);
-  disconnect(0);
-  _delay_ms(10);
+    // Setting the Wiznet W5100 RX and TX Memory Size (2KB),
+    SPI_Write(RMSR,NET_MEMALLOC);
+    SPI_Write(TMSR,NET_MEMALLOC);
+   
+    close(0);
+    disconnect(0);
+    _delay_ms(10);
 }
 
 void write_bytes(uint16_t address, const unsigned char* data, uint8_t length) {

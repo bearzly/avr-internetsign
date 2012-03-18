@@ -56,10 +56,11 @@ const static PROGMEM char HTML_HEADER[] = "<!DOCTYPE html>"
 "<head>"
 "	<title>Internet Sign</title>"
 "   <style type='text/css'>"
-"body{font-family:Arial;background:#eee;padding:10px 0}#header{margin:auto;width:70%;background:#777;padding:10px 0}#header ul{padding:0;margin:0;margin-left:3px}#header li{display:inline;background:#555;padding:7px 5px;border:1px #222}#header a{color:#ccc;text-decoration:none}#header a:hover{text-decoration:underline}#container{margin:auto;width:70%;background:#fff;padding:10px 0}h1{margin:0}#content{padding:5px 10px}"
+"body{font-family:Arial;background:#eee;padding:10px 0}h1{color:#338}#header{background:#777;padding:10px 0;border-bottom:7px solid #8ae;}#header ul{padding:0;margin:0;margin-left:3px}#header li{display:inline;background:#555;padding:7px 5px;border:1px #222}#header a{color:#ddd;text-decoration:none}#header a:hover{text-decoration:underline}#container{font-size: 10pt;background:#fff;padding:10px 0}h1{margin:0}#content{padding:5px 10px}#body{width:65%;margin:auto;border:2px solid #ddd}"
 "   </style>"
 "</head>"
 "<body>"
+"   <div id='body'>"
 "	<div id='header'>"
 "		<ul>"
 "			<li><a href='/'>Home</a></li>"
@@ -73,7 +74,7 @@ const static PROGMEM char CONFIG_ROW[] = "<tr><td>%s</td><td>%d.%d.%d.%d</td><td
 const static PROGMEM char MAC_ROW[] = "<tr><td>MAC Address</td><td>%.2X:%.2X:%.2X:%.2X:%.2X:%.2X</td><td><input type='text' name='mac'></td></tr>";
 const static PROGMEM char OPTION_BOX[] = "<tr><td>%s</td><td><input type='text' name='%s' style='width:20px' maxlength='2' value='%d'></td></tr>";
 
-const static PROGMEM char HTML_FOOTER[] = "</div></div>"
+const static PROGMEM char HTML_FOOTER[] = "</div></div></div>"
 "</body>"
 "</html>";
 

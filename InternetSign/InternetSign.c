@@ -336,10 +336,14 @@ int main(void)
 						sprintf_P((char *)buffer+strlen((char *)buffer), PSTR("</table><br><table>"));
 						sprintf_P((char *)buffer+strlen((char *)buffer), OPTION_BOX, "Brightness (1-16): ", "brt", EEGET((uint8_t *)BRGHT_ADDR));
 						sprintf_P((char *)buffer+strlen((char *)buffer), OPTION_BOX, "Speed (1-10): ", "speed", EEGET((uint8_t *)SPEED_ADDR));
+						strcat_P((char *)buffer, PSTR("</table><br><table>"));
+						strcat_P((char *)buffer, PSTR("<tr><td>New username:</td><td><input type='text' name='user'></td></tr>"));
+						strcat_P((char *)buffer, PSTR("<tr><td>New password:</td><td><input type='password' name='pwd'></td></tr>"));
+						strcat_P((char *)buffer, PSTR("<tr><td>Old password:</td><td><input type='password' name='oldpwd'></td></tr>"));
 						strcat_P((char *)buffer, PSTR("</table><br><input type='submit' value='Save'></form>"));
 				    } else {
-				        strcpy_P((char *)buffer, PSTR("<h1>Internet Sign</h1><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
-				        strcat_P((char *)buffer, PSTR("<p><strong>Current Message:</strong>"));
+				        strcpy_P((char *)buffer, PSTR("<h1>Internet Sign</h1><p>Enter a new message to be displayed here. Maximum 255 ASCII characters.</p><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
+				        strcat_P((char *)buffer, PSTR("<p><strong>Current Message: </strong>"));
 						strcat((char *)buffer, get_message());
 				        strcat_P((char *)buffer, PSTR("</p>"));
 				    }				

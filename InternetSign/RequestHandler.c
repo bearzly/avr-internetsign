@@ -1,8 +1,11 @@
 /*
  * RequestHandler.c
  *
+ * Performs handling of HTTP requests and creating
+ * appropriate responses
+ *
  * Created: 17/03/2012 7:07:19 PM
- *  Author: Benjamin
+ *  Author: Benjamin Gwin
  */ 
 
 #include <string.h>
@@ -18,6 +21,8 @@
 #include "Socket.h"
 #include "Util.h"
 
+// Main method for parsing and handling the request buffer
+// Returns 0 on success and a negative number on failure
 int handle_request(const uint8_t* buffer) {										
 	char* method = strtok((char *)buffer, " ");
 	char* path = strtok(0, " ");
@@ -26,13 +31,18 @@ int handle_request(const uint8_t* buffer) {
 	int isRoot = strcmp_P(path, PSTR("/")) == 0;
 				
 	int authenticated = 0;
-				
+	
+	// Iterate through all the HTTP headers
+	// Currently only the authorization header is used
 	char* header, * nextHeader;
 	header = strtok(NULL, "\r\n");
 	nextHeader = header;
 	while (nextHeader != NULL) {
 		if (strstr((char *)header, "Authorization") == (char *)header) {
 			char* info = strrchr(header, ' ') + 1;
+			
+			// Authentication information is passed as a base64 encoded
+			// string of username:password
 			char* login = malloc(strlen_E((char *)USER_ADDR) + strlen_E((char *)PWD_ADDR) + 2);
 			if (login != NULL) {
 				strcpy_E(login, (char *)USER_ADDR);
@@ -54,8 +64,6 @@ int handle_request(const uint8_t* buffer) {
 	if (!authenticated) {
 		strcpy_P((char *)buffer, HTTP_AUTH_REQUIRED);
 		send(0, buffer, strlen((char *)buffer));
-		close(0);
-		disconnect(0);
 		return -1;
 	}
 				
@@ -64,6 +72,8 @@ int handle_request(const uint8_t* buffer) {
 		char* post = header;
 		char* param = strtok(post, "&");
 				
+		// Loop through name/value pairs of POST values
+		// and pass them to the appropriate function
 		while (param != NULL) {
 			char* equals = strchr(param, '=');
 			char* nextParam = strtok(NULL, "&");
@@ -100,6 +110,7 @@ int handle_request(const uint8_t* buffer) {
 	return 0;		
 }
 
+// Performs action based on POST parameters passed to /
 void handle_root_param(const char* param, const char* value) {
 	if (strcmp_P(param, PSTR("message")) == 0) {
 		char* message_buf = get_message();
@@ -108,6 +119,7 @@ void handle_root_param(const char* param, const char* value) {
 	}
 }
 
+// Performs action based on POST parameters passed to /config
 void handle_config_param(const char* param, const char* value) {
 	if (strcmp_P(param, PSTR("ip"))== 0) {
 		int b1, b2, b3, b4;
@@ -120,8 +132,7 @@ void handle_config_param(const char* param, const char* value) {
 				eeprom_update_byte((uint8_t*)IP_ADDR + 2, (uint8_t)b3);
 				eeprom_update_byte((uint8_t*)IP_ADDR + 3, (uint8_t)b4);
 			}
-		}
-									
+		}				
 	} else if (strcmp_P(param, PSTR("mac")) == 0) {
 		int b1, b2, b3, b4, b5, b6;
 		int ret = sscanf_P(value, PSTR("%2X%%3A%2X%%3A%2X%%3A%2X%%3A%2X%%3A%2X"), &b1, &b2, &b3, &b4, &b5, &b6);
@@ -177,6 +188,7 @@ void handle_config_param(const char* param, const char* value) {
 	}					
 }
 
+// Creates the body of the response for /
 void create_root_response(char* buffer) {
 	strcpy_P(buffer, PSTR("<h1>Internet Sign</h1><p>Enter a new message to be displayed here. Maximum 255 ASCII characters.</p><form method='post' action='/'><input type='text' maxlength='255' name='message'><input type='submit'></form>"));
 	strcat_P(buffer, PSTR("<p><strong>Current Message: </strong>"));
@@ -184,6 +196,7 @@ void create_root_response(char* buffer) {
 	strcat_P(buffer, PSTR("</p>"));
 }
 
+// Creates the body of the response for /config
 void create_config_response(char* buffer) {
 	strcpy_P(buffer, PSTR("<h1>Configuration</h1><form action='/config' method='post'><table>"));
 	sprintf_P(buffer+strlen(buffer), CONFIG_ROW, "IP Address", EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3), "ip");
@@ -200,6 +213,8 @@ void create_config_response(char* buffer) {
 	strcat_P(buffer, PSTR("</table><br><input type='submit' value='Save'></form>"));
 }
 
+// Helper method for urldecode that concerts a hex
+// character to its integer value
 int chartoint(char c) {
 	if ((c >= '0') && (c <= '9')) {
 		return c - '0';
@@ -212,6 +227,11 @@ int chartoint(char c) {
 	}
 }
 
+// Decodes a URL from src into dest, where size is number
+// of bytes to decode from src
+// URLs are decoded by replacing runs of %XX, where XX is a
+// 2 character hex string by the character with value XX
+// e.g. %20 decodes to ASCII 0x20 == space
 void urldecode(char* dest, const char* src, int size) {
 	int j = 0;
 	
@@ -229,6 +249,8 @@ void urldecode(char* dest, const char* src, int size) {
 	dest[j] = '\0';
 }
 
+// Gets the encoded character for a 6 bit number
+// used in bas64 encoding
 char base64digit(uint8_t n) {
 	if ((n >= 0) && (n <= 25)) {
 		return 'A' + n;
@@ -245,6 +267,12 @@ char base64digit(uint8_t n) {
 	}
 }
 
+// Encodes the given string into base64, returning
+// a malloced string which much be free'd after use
+
+// base64 coding encodes arbitrary binary sequences into
+// ASCII by taking runs of 6 bits at a time and encoding
+// them into a character, as given by base64digit
 char* const base64encode(const char* src) {
 	int size = strlen(src);
 	const char* end = src + size;

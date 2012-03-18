@@ -9,10 +9,6 @@
 #ifndef SIGN_H_
 #define SIGN_H_
 
-#define CHARH 7
-#define CHARW 5
-#define SIGNW 4 * 8
-
 void next_frame();
 void store_message();
 char* get_message();
@@ -23,7 +19,7 @@ void write_buffer(const uint8_t *buffer);
 void write_pixels(uint8_t address, uint8_t data);
 void clear_display();
 void initialize_sign();
-void write_commmand(uint8_t command);
+void write_command(uint8_t command);
 void set_brightness(uint8_t brightness);
 
 #endif /* SIGN_H_ */

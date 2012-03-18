@@ -14,15 +14,6 @@
 
 #define MSG_LENGTH 256
 
-#define SIGN_CS_PORT PORTB
-#define SIGN_CS_DDR  DDRB
-#define SIGN_CS      PB0
-
-#define SIGN_DATA_PORT PORTD
-#define SIGN_DATA_DDR  DDRD
-#define SIGN_SCK       PD7
-#define SIGN_DATA      PD6
-
 // EEPROM addresses
 #define IP_ADDR    0x0000  // 4 bytes
 #define MAC_ADDR   0x0004  // 6 bytes

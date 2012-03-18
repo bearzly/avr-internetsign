@@ -15,10 +15,24 @@
 
 #include <util/delay.h>
 
+#define CHARW 5        // Maximum width of a character
+#define SIGNW 4 * 8    // Total width of the sign
+
+// Ports used for sign operation
+#define SIGN_CS_PORT PORTB
+#define SIGN_CS_DDR  DDRB
+#define SIGN_CS      PB0
+#define SIGN_DATA_PORT PORTD
+#define SIGN_DATA_DDR  DDRD
+#define SIGN_SCK       PD7
+#define SIGN_DATA      PD6
+
+// Prefixes used for sign interfacing
 #define PREFIX_SIZE 3
 #define CMD_PREFIX 0x04
 #define WR_PREFIX 0x05
 
+// Commands used for controlling the sign
 #define CMD_SIZE 9
 #define SYS_DIS        0x00
 #define SYS_EN         0x01
@@ -30,30 +44,36 @@
 #define PWM_DUTY_16    0xAF
 #define COM_OPTION     0x20
 
+// Byte lengths for transmitting addresses or data
 #define ADR_SIZE 7
 #define DATA_SIZE 4
 
+// Sign speed is controlled by these parameters
+// New frames are created every SPEED_BASE+((10 - speed)*SPEED_MULTIPLIER) ticks
 #define SPEED_BASE 18000
 #define SPEED_MULTIPLIER 5000
 
-
+// Helper to set the buffer value only if it has a valid index
 #define SET_BUFFER(buffer, data, idx) if (0 <= idx && idx < SIGNW) buffer[idx] = data
 
-static char g_message[MSG_LENGTH];
-static uint8_t g_frame_buffer[SIGNW];
-static int16_t g_current_index = SIGNW;
-static int16_t g_pixel_extent;
+static char g_message[MSG_LENGTH];      // The current message
+static uint8_t g_frame_buffer[SIGNW];   // Contains the pixel data to be sent
+static int16_t g_current_index = SIGNW; // Current index of scrolling
+static int16_t g_pixel_extent;          // Pixel width of the entire current message
 
+// Saves the new message to EEPROM and resets the sign display
 void store_message() {
 	g_pixel_extent = calc_extent(g_message);
 	g_current_index = SIGNW;
 	eeprom_update_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
 }
 
+// Returns a pointer to the message array
 char* get_message() {
 	return g_message;
 }
 
+// Advances the display to the next frame
 void next_frame() {
 	update_buffer(g_message, g_frame_buffer, g_current_index);
 	g_current_index--;
@@ -63,6 +83,8 @@ void next_frame() {
 	write_buffer(g_frame_buffer);
 }
 
+// Calculates the total pixel width of a string by
+// ignoring empty columns and treating spaces specially
 int calc_extent(const char* str) {
 	int length = 0;
 	const int size = strlen(str);
@@ -82,6 +104,7 @@ int calc_extent(const char* str) {
 	return length;
 }
 
+// Sets and stores the current speed of the sign
 void set_speed(uint8_t speed) {
 	if (speed < 1) {
 		speed = 1;
@@ -92,29 +115,31 @@ void set_speed(uint8_t speed) {
 	eeprom_update_byte((uint8_t*)SPEED_ADDR, speed);
 }
 
-void deselect() {
-    output_high(SIGN_CS_PORT, SIGN_CS);
-}    
+// Sets and saves the current brightness of the sign
+void set_brightness(uint8_t brightness) {
+	if (brightness < 1) {
+		brightness = 1;
+	} else if (brightness > 16) {
+		brightness = 16;
+	}
+	write_command((PWM_DUTY_4 & 0xF0) + (brightness - 1));
+	eeprom_update_byte((uint8_t *)BRGHT_ADDR, brightness);
+}
 
-void select() {
+// Initializes writing to the sign
+void write_begin() {
+    output_high(SIGN_CS_PORT, SIGN_CS);
+    output_high(SIGN_DATA_PORT, SIGN_SCK);
     output_low(SIGN_CS_PORT, SIGN_CS);
 }
 
-void clock_pulse() {
-    output_low(SIGN_DATA_PORT, SIGN_SCK);
-    output_high(SIGN_DATA_PORT, SIGN_SCK);
-}
-
-void write_begin() {
-    deselect();
-    output_high(SIGN_DATA_PORT, SIGN_SCK);
-    select();
-}
-
+// Signals that writing is complete
 void write_end() {
-    deselect();
+    output_high(SIGN_CS_PORT, SIGN_CS);
 }
 
+// Writes 'bits' bits of data from 'data' to the sign,
+// starting with the most significant bit
 void write_data_msb(uint16_t data, uint8_t bits) {
     for (uint8_t i = bits; i > 0; i--) {
         if (data & (1 << (i - 1))) {
@@ -127,6 +152,8 @@ void write_data_msb(uint16_t data, uint8_t bits) {
     }
 }
 
+// Writes 'bits' bits of data from 'data' to the sign,
+// starting with the least significant bit
 void write_data_lsb(uint16_t data, uint8_t bits) {
     for (uint8_t i = 0; i < bits; i++) {
         if (data & (1 << i)) {
@@ -139,6 +166,8 @@ void write_data_lsb(uint16_t data, uint8_t bits) {
     }
 }
 
+// Sends a given command to the sign, as defined above
+// See the data sheet for more commands
 void write_command(uint8_t command) {
     write_begin();
     write_data_msb(CMD_PREFIX, PREFIX_SIZE);
@@ -146,6 +175,8 @@ void write_command(uint8_t command) {
     write_end();
 }
 
+// Writes a single 4 bit section of pixel data to the
+// given address
 void write_pixels(uint8_t address, uint8_t data) {
     write_begin();
     write_data_msb(WR_PREFIX, PREFIX_SIZE);
@@ -154,6 +185,7 @@ void write_pixels(uint8_t address, uint8_t data) {
     write_end();
 }
 
+// Draws a single character in the given column
 void write_char(char c, uint8_t col) {
     unsigned char data;
     uint8_t addr = col * 2;
@@ -168,6 +200,7 @@ void write_char(char c, uint8_t col) {
     write_end();
 }
 
+// Turns off all LEDs in the sign
 void clear_display() {
     write_begin();
     write_data_msb(WR_PREFIX, PREFIX_SIZE);
@@ -178,6 +211,8 @@ void clear_display() {
     write_end();
 }
 
+// Draws a frame of the message into the buffer, offset by a 
+// certain index
 void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
 	int real_pos = 0;
 	
@@ -203,6 +238,8 @@ void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
 	}
 }
 
+// Writes an entire buffer to the sign, starting at address 0
+// and increasing sequentially
 void write_buffer(const uint8_t* buffer) {
 	write_begin();
 	write_data_msb(WR_PREFIX, PREFIX_SIZE);
@@ -214,12 +251,14 @@ void write_buffer(const uint8_t* buffer) {
 	write_end();
 }
 
+// Performs initialization of required sign pins
+// and initializes the message
 void initialize_sign() {
 	set_output(SIGN_DATA_DDR, SIGN_SCK);
     set_output(SIGN_DATA_DDR, SIGN_DATA);
     set_output(SIGN_CS_DDR, SIGN_CS);
 	
-	deselect();
+	output_high(SIGN_CS_PORT, SIGN_CS);
     
     write_command(SYS_EN);
     write_command(LED_ON);
@@ -228,14 +267,4 @@ void initialize_sign() {
 	
 	eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
 	g_pixel_extent = calc_extent(g_message);
-}
-
-void set_brightness(uint8_t brightness) {
-	if (brightness < 1) {
-		brightness = 1;
-	} else if (brightness > 16) {
-		brightness = 16;
-	}
-	write_command((PWM_DUTY_4 & 0xF0) + (brightness - 1));
-	eeprom_update_byte((uint8_t *)BRGHT_ADDR, brightness);
 }

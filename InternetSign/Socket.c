@@ -58,9 +58,10 @@
 #define RX_BUF_MASK      0x07FF   // Rx 2K Buffer Mask:
 #define NET_MEMALLOC     0x05     // Use 2K of Tx/Rx Buffer
 
-
+// Loops until the SPI register is ready for use
 #define WAIT_FOR_SPI while (!(SPSR & (1<<SPIF)));
 
+// Writes the given data to an address on the Wiznet
 void SPI_Write(uint16_t addr, uint8_t data) {
 	SPI_PORT &= ~(1<<SPI_CS);
 	SPDR = WIZNET_WRITE_OPCODE;
@@ -82,6 +83,7 @@ void SPI_Write(uint16_t addr, uint8_t data) {
 	SPI_PORT |= (1 << SPI_CS);
 }
 
+// Reads a byte from the given address on the Wiznet
 unsigned char SPI_Read(uint16_t addr) {
 	SPI_PORT &= ~(1 << SPI_CS);
 	
@@ -101,6 +103,8 @@ unsigned char SPI_Read(uint16_t addr) {
 	return SPDR;
 }
 
+// Initializes ports required for the Wiznet and performs
+// basic Wiznet startup commands
 void init_wiznet()
 {
 	SPI_DDR |= (1 << SPI_MOSI);
@@ -110,8 +114,9 @@ void init_wiznet()
     SPCR = (1<<SPE)|(1<<MSTR);
     SPSR |= (1<<SPI2X);
 	
-    // Setting the Wiznet W5100 Mode Register: 0x0000
-    SPI_Write(MR,0x80);            // MR = 0b10000000;
+    // Set the MSB of the mode register to cause a reset
+	// of the Wiznet registers
+    SPI_Write(MR,0x80);
   
     _delay_ms(10);
 
@@ -124,12 +129,7 @@ void init_wiznet()
     _delay_ms(10);
 }
 
-void write_bytes(uint16_t address, const unsigned char* data, uint8_t length) {
-	for (int i = 0; i < length; i++) {
-		SPI_Write(address + i, data[i]);
-	}
-}
-
+// Sets the current ip of the Wiznet
 void set_ip(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
     SPI_Write(SIPR + 0, n1);
 	SPI_Write(SIPR + 1, n2);
@@ -137,6 +137,7 @@ void set_ip(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
 	SPI_Write(SIPR + 3, n4);
 }
 
+// Sets the current gateway address of the Wiznet
 void set_gateway(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
     SPI_Write(GAR + 0, n1);
 	SPI_Write(GAR + 1, n2);
@@ -144,6 +145,7 @@ void set_gateway(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
 	SPI_Write(GAR + 3, n4);
 }
 
+// Sets the current MAC address of the Wiznet
 void set_mac(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4, uint8_t n5, uint8_t n6) {
     SPI_Write(SAR + 0, n1);
 	SPI_Write(SAR + 1, n2);
@@ -153,6 +155,7 @@ void set_mac(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4, uint8_t n5, uint8_t
 	SPI_Write(SAR + 5, n6);
 }
 
+// Sets the current subnet mask of the Wiznet
 void set_subnet(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
     SPI_Write(SUBR + 0, n1);
 	SPI_Write(SUBR + 1, n2);
@@ -160,6 +163,7 @@ void set_subnet(uint8_t n1, uint8_t n2, uint8_t n3, uint8_t n4) {
 	SPI_Write(SUBR + 3, n4);
 }
 
+// Closes a socket
 void close(uint8_t sock) {
 	if (sock != 0) return;
 	
@@ -167,6 +171,7 @@ void close(uint8_t sock) {
 	while (SPI_Read(S0_CR));
 }
 
+// Disconnects a socket
 void disconnect(uint8_t sock) {
 	if (sock != 0) return;
 	
@@ -176,6 +181,8 @@ void disconnect(uint8_t sock) {
 	_delay_ms(10);
 }
 
+// Creates a new socket with the given protocol and port
+// Returns 1 upon success
 uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
 	if (sock != 0) return 0;
 	
@@ -185,7 +192,7 @@ uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
 		close(sock);
 	}
 	
-	SPI_Write(S0_MR, protocol|0x40);
+	SPI_Write(S0_MR, protocol);
 	
 	SPI_Write(S0_PORT, ((port & 0xFF00) >> 8));
 	SPI_Write(S0_PORT + 1, port & 0x00FF);
@@ -202,6 +209,8 @@ uint8_t socket(uint8_t sock, uint8_t protocol, uint16_t port) {
 	return ret;
 }
 
+// Causes a socket to listen for requests
+// Returns 0 on success and 1 on failure
 uint8_t listen(uint8_t sock) {
 	uint8_t ret = 0;
 	if (sock != 0) return ret;
@@ -219,6 +228,8 @@ uint8_t listen(uint8_t sock) {
 	return ret;
 }
 
+// Sends 'len' bytes of buffer to the remote client
+// Returns 1 on success and 0 on failure
 uint16_t send(uint8_t sock, const uint8_t* buf, uint16_t len) {
 	uint16_t ptr, offset, realaddr, txsize, timeout;
 	
@@ -260,6 +271,9 @@ uint16_t send(uint8_t sock, const uint8_t* buf, uint16_t len) {
 	return 1;
 }
 
+// Receives data from the remote client into buf.
+// The number of bytes received is less than or equal to len.
+// Returns the number of bytes that were received
 uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
 	if (sock != 0) return 0;
 	
@@ -290,6 +304,7 @@ uint16_t recv(uint8_t sock, uint8_t *buf, uint16_t len) {
 	return bytes_to_read;
 }
 
+// Returns the current status of the socket
 uint8_t sockstat(uint8_t socket) {
 	if (socket != 0) return 0;
 	return SPI_Read(S0_SR);

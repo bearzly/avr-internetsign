@@ -58,14 +58,17 @@
 
 static char g_message[MSG_LENGTH];      // The current message
 static uint8_t g_frame_buffer[SIGNW];   // Contains the pixel data to be sent
-static int16_t g_current_index = SIGNW; // Current index of scrolling
 static int16_t g_pixel_extent;          // Pixel width of the entire current message
+
+static int g_cidx = 0;  // index of the current character being drawn
+static int g_idx = 0;   // col index of the current character being drawn
 
 // Saves the new message to EEPROM and resets the sign display
 void store_message() {
 	g_pixel_extent = calc_extent(g_message);
-	g_current_index = SIGNW;
-	eeprom_update_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
+	g_cidx = g_idx = 0;
+	memset((void *)g_frame_buffer, 0, MSG_LENGTH);
+	eeprom_update_block(g_message, (void *)MSG_ADDR, strlen(g_message) + 1);
 }
 
 // Returns a pointer to the message array
@@ -75,11 +78,7 @@ char* get_message() {
 
 // Advances the display to the next frame
 void next_frame() {
-	update_buffer(g_message, g_frame_buffer, g_current_index);
-	g_current_index--;
-	if (g_current_index < -g_pixel_extent) {
-		g_current_index = SIGNW;
-	}
+	update_buffer(g_message, g_frame_buffer);
 	write_buffer(g_frame_buffer);
 }
 
@@ -211,32 +210,29 @@ void clear_display() {
     write_end();
 }
 
-// Draws a frame of the message into the buffer, offset by a 
-// certain index
-void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
-	int real_pos = 0;
+// Draws the next frame of scrolling text to the buffer
+void update_buffer(const char* msg, uint8_t* buffer) {
+	memcpy((void *)buffer, (void *)(buffer + 1), SIGNW - 1);
 	
-	memset((void *)buffer, 0, SIGNW);
-	
-	const int size = strlen(msg);
-	for (int i = 0; i < size; i++) {
-		char c = msg[i];
-		if (c == ' ') {
-			real_pos += 2;
-			SET_BUFFER(buffer, 0, real_pos + idx);
-			SET_BUFFER(buffer, 0, real_pos + idx + 1);
+	if (msg[g_cidx] == '\0') {
+		if (g_idx > SIGNW) {
+			g_cidx = 0;
+			g_idx = 0;
 		} else {
-			for (int j = 0; j < 5; j++) {
-                // Font data is only stored for characters >= 32
-				uint8_t data = pgm_read_byte(Font5x7 + (c - 32) * 5 + j);
-				if (data == 0) break;
-				real_pos++;
-                SET_BUFFER(buffer, data, real_pos + idx);
-            }
-			real_pos ++;
-		    SET_BUFFER(buffer, 0, real_pos + idx);
+			g_idx++;
+			buffer[SIGNW - 1] = 0;
 		}
-	}
+	} else {
+	    uint8_t b = pgm_read_byte(Font5x7 + (msg[g_cidx] - 32) * CHARW + g_idx);
+	    if ((b == 0) || (g_idx >= CHARW)) {
+		    g_cidx++;
+		    g_idx = 0;
+		    buffer[SIGNW - 1] = 0;
+	    } else {
+		    buffer[SIGNW - 1] = b;
+		    g_idx++;
+	    }
+	}	
 }
 
 // Writes an entire buffer to the sign, starting at address 0
@@ -268,4 +264,6 @@ void initialize_sign() {
 	
 	eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
 	g_pixel_extent = calc_extent(g_message);
+	
+	clear_display();
 }

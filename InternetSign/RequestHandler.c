@@ -173,19 +173,29 @@ void handle_config_param(const char* param, const char* value) {
 		}
 	} else if (strcmp_P(param, PSTR("brt")) == 0) {
 		int brightness;
-		if (sscanf_P(value, PSTR("%d"), &brightness) == 1) {
-			if ((brightness >= 1) && (brightness <= 16)) {
+		if (sscanf_P(value, PSTR("%2d"), &brightness) == 1) {
+			if ((brightness >= 1) && (brightness <= MAX_BRIGHTNESS)) {
 				set_brightness(brightness);
 			}										
 		}	
 	} else if (strcmp_P(param, PSTR("speed")) == 0) {
 		int speed;
-		if (sscanf_P(value, PSTR("%d"), &speed) == 1) {
-			if ((speed >= 1) && (speed <= 10)) {
+		if (sscanf_P(value, PSTR("%2d"), &speed) == 1) {
+			if ((speed >= 1) && (speed <= MAX_SPEED)) {
 				set_speed(speed);
 			}										
 		}										
-	}					
+	} else if (strcmp_P(param, PSTR("user")) == 0) {
+		const int size = strlen(value);
+		if (size > 0 && size <= 20) {
+			eeprom_update_block(value, (void *)USER_ADDR, size + 1);
+		}
+	} else if (strcmp_P(param, PSTR("pwd")) == 0) {
+		const int size = strlen(value);
+		if (size > 0 && size <= 20) {
+			eeprom_update_block(value, (void *)PWD_ADDR, size + 1);
+		}
+	}
 }
 
 // Creates the body of the response for /
@@ -209,7 +219,6 @@ void create_config_response(char* buffer) {
 	strcat_P(buffer, PSTR("</table><br><table>"));
 	strcat_P(buffer, PSTR("<tr><td>New username:</td><td><input type='text' name='user'></td></tr>"));
 	strcat_P(buffer, PSTR("<tr><td>New password:</td><td><input type='password' name='pwd'></td></tr>"));
-	strcat_P(buffer, PSTR("<tr><td>Old password:</td><td><input type='password' name='oldpwd'></td></tr>"));
 	strcat_P(buffer, PSTR("</table><br><input type='submit' value='Save'></form>"));
 }
 

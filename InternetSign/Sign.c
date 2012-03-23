@@ -49,7 +49,7 @@
 #define DATA_SIZE 4
 
 // Sign speed is controlled by these parameters
-// New frames are created every SPEED_BASE+((10 - speed)*SPEED_MULTIPLIER) ticks
+// New frames are created every SPEED_BASE+((MAX_SPEED - speed)*SPEED_MULTIPLIER) ticks
 #define SPEED_BASE 18000
 #define SPEED_MULTIPLIER 5000
 
@@ -108,8 +108,8 @@ int calc_extent(const char* str) {
 void set_speed(uint8_t speed) {
 	if (speed < 1) {
 		speed = 1;
-	} else if (speed > 10) {
-		speed = 10;
+	} else if (speed > MAX_SPEED) {
+		speed = MAX_SPEED;
 	}
 	OCR1A = SPEED_BASE + SPEED_MULTIPLIER * (10 - speed);
 	eeprom_update_byte((uint8_t*)SPEED_ADDR, speed);
@@ -119,8 +119,8 @@ void set_speed(uint8_t speed) {
 void set_brightness(uint8_t brightness) {
 	if (brightness < 1) {
 		brightness = 1;
-	} else if (brightness > 16) {
-		brightness = 16;
+	} else if (brightness > MAX_BRIGHTNESS) {
+		brightness = MAX_BRIGHTNESS;
 	}
 	write_command((PWM_DUTY_4 & 0xF0) + (brightness - 1));
 	eeprom_update_byte((uint8_t *)BRGHT_ADDR, brightness);
@@ -227,7 +227,8 @@ void update_buffer(const char* msg, uint8_t* buffer, int16_t idx) {
 			SET_BUFFER(buffer, 0, real_pos + idx + 1);
 		} else {
 			for (int j = 0; j < 5; j++) {
-                uint8_t data = pgm_read_byte(Font5x7 + (c - 32) * 5 + j);
+                // Font data is only stored for characters >= 32
+				uint8_t data = pgm_read_byte(Font5x7 + (c - 32) * 5 + j);
 				if (data == 0) break;
 				real_pos++;
                 SET_BUFFER(buffer, data, real_pos + idx);

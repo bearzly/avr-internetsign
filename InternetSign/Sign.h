@@ -9,6 +9,9 @@
 #ifndef SIGN_H_
 #define SIGN_H_
 
+#define MAX_BRIGHTNESS 16
+#define MAX_SPEED 10
+
 void next_frame();
 void store_message();
 char* get_message();

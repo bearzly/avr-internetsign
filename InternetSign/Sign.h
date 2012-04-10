@@ -12,8 +12,14 @@
 #define MAX_BRIGHTNESS 16
 #define MAX_SPEED 10
 
+typedef enum {
+    MESSAGE,
+	CONFIG,
+} Mode;
+
 void next_frame();
-void store_message();
+void set_message(const char* msg);
+void save_message();
 char* get_message();
 int calc_extent(const char* msg);
 void set_speed(uint8_t speed);
@@ -24,5 +30,6 @@ void clear_display();
 void initialize_sign();
 void write_command(uint8_t command);
 void set_brightness(uint8_t brightness);
+void set_mode(Mode m);
 
 #endif /* SIGN_H_ */

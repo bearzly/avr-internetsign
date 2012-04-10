@@ -8,6 +8,7 @@
 #include <avr/eeprom.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "Font.h"
 #include "System.h"
@@ -50,24 +51,26 @@
 
 // Sign speed is controlled by these parameters
 // New frames are created every SPEED_BASE+((MAX_SPEED - speed)*SPEED_MULTIPLIER) ticks
-#define SPEED_BASE 18000
-#define SPEED_MULTIPLIER 5000
+#define SPEED_BASE 70
+#define SPEED_MULTIPLIER 20
 
 // Helper to set the buffer value only if it has a valid index
 #define SET_BUFFER(buffer, data, idx) if (0 <= idx && idx < SIGNW) buffer[idx] = data
 
 static char g_message[MSG_LENGTH];      // The current message
 static uint8_t g_frame_buffer[SIGNW];   // Contains the pixel data to be sent
-static int16_t g_pixel_extent;          // Pixel width of the entire current message
 
 static int g_cidx = 0;  // index of the current character being drawn
 static int g_idx = 0;   // col index of the current character being drawn
 
+static Mode g_currentMode = MESSAGE;
+
 // Saves the new message to EEPROM and resets the sign display
-void store_message() {
-	g_pixel_extent = calc_extent(g_message);
-	g_cidx = g_idx = 0;
-	memset((void *)g_frame_buffer, 0, MSG_LENGTH);
+void set_message(const char* msg) {
+	strcpy(g_message, msg);
+}
+
+void save_message() {
 	eeprom_update_block(g_message, (void *)MSG_ADDR, strlen(g_message) + 1);
 }
 
@@ -110,7 +113,7 @@ void set_speed(uint8_t speed) {
 	} else if (speed > MAX_SPEED) {
 		speed = MAX_SPEED;
 	}
-	OCR1A = SPEED_BASE + SPEED_MULTIPLIER * (10 - speed);
+	OCR0A = SPEED_BASE + SPEED_MULTIPLIER * (MAX_SPEED - speed);
 	eeprom_update_byte((uint8_t*)SPEED_ADDR, speed);
 }
 
@@ -201,7 +204,10 @@ void write_char(char c, uint8_t col) {
 
 // Turns off all LEDs in the sign
 void clear_display() {
-    write_begin();
+    g_cidx = g_idx = 0;
+	memset((void *)g_frame_buffer, 0, MSG_LENGTH);
+	
+	write_begin();
     write_data_msb(WR_PREFIX, PREFIX_SIZE);
     write_data_msb(0x00, ADR_SIZE);
     for (uint8_t i = 0; i < 0x40; i += 1) {
@@ -263,7 +269,25 @@ void initialize_sign() {
     write_command(COM_OPTION);
 	
 	eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
-	g_pixel_extent = calc_extent(g_message);
 	
+	clear_display();
+}
+
+Mode get_mode() {
+	return g_currentMode;
+}
+
+void set_mode(Mode m) {
+	switch(m) {
+		case CONFIG:
+		    sprintf_P(g_message, PSTR("%d.%d.%d.%d %d.%d.%d.%d"), 
+			    EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3),
+				EEGET(SNET_MASK+0),EEGET(SNET_MASK+1),EEGET(SNET_MASK+2),EEGET(SNET_MASK+3));
+			break;
+		case MESSAGE:
+		    eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
+			break;
+	}
+	g_currentMode = m;
 	clear_display();
 }

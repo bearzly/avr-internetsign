@@ -115,7 +115,8 @@ void handle_root_param(const char* param, const char* value) {
 	if (strcmp_P(param, PSTR("message")) == 0) {
 		char* message_buf = get_message();
 		urldecode(message_buf, value, strlen(value));
-		store_message();
+		save_message();
+		clear_display();
 	}
 }
 

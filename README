@@ -11,6 +11,12 @@ The core components of this project are:
 - WIZnet WIZ811MJ breakout board with embedded W5100 and RJ-45 connector
 - SureElectronics DE-DP13112 LED display
 
+BUILDING
+
+This project can be compiled with both AVR Studio 4 and 5. Solution files
+are provided for AVR Studio 5. Programming the microcontroller was done using
+a JTAGICE MkII programmer.
+
 LICENSE
 
 Original source files are (c) 2012 Benjamin Gwin and are licensed under

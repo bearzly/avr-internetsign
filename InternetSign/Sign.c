@@ -65,11 +65,12 @@ static int g_idx = 0;   // col index of the current character being drawn
 
 Mode g_currentMode = MESSAGE;
 
-// Saves the new message to EEPROM and resets the sign display
+// Changes the current message to the passed string
 void set_message(const char* msg) {
 	strcpy(g_message, msg);
 }
 
+// Causes the current message to be persisted to EEPROM
 void save_message() {
 	eeprom_update_block(g_message, (void *)MSG_ADDR, strlen(g_message) + 1);
 }
@@ -273,10 +274,12 @@ void initialize_sign() {
 	clear_display();
 }
 
+// Gets the current sign mode
 Mode get_mode() {
 	return g_currentMode;
 }
 
+// Changes the sign mode
 void set_mode(Mode m) {
 	switch(m) {
 		case CONFIG:
@@ -286,7 +289,7 @@ void set_mode(Mode m) {
 			set_speed(1);
 			break;
 		case MESSAGE:
-		    set_speed(EEGET(BRGHT_ADDR));
+		    set_speed(EEGET(SPEED_ADDR));
 			eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
 			break;
 	}

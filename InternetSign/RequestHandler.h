@@ -1,8 +1,15 @@
 /*
  * RequestHandler.h
  *
+ * EE400/EE401 2011-2012
+ * Group 38 - Internet Sign
+ * Benjamin Gwin, James Powers, Karl Rath
+ *
  * Created: 17/03/2012 7:07:31 PM
- *  Author: Benjamin
+ * Copyright (c) 2012 Benjamin Gwin
+ *
+ * This software is free/open source under the terms of the
+ * GPL v3. See http://www.gnu.org/licenses/gpl.html for details.
  */ 
 
 

@@ -3,8 +3,15 @@
  *
  * Contains the main method for the internet sign
  *
+ * EE400/EE401 2011-2012
+ * Group 38 - Internet Sign
+ * Benjamin Gwin, James Powers, Karl Rath
+ *
  * Created: 1/12/2012 2:34:57 PM
- *  Author: Benjamin Gwin
+ * Copyright (c) 2012 Benjamin Gwin
+ *
+ * This software is free/open source under the terms of the
+ * GPL v3. See http://www.gnu.org/licenses/gpl.html for details.
  */ 
 
 #include <avr/io.h>

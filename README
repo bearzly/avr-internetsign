@@ -1,0 +1,17 @@
+AVR INTERNET SIGN
+
+This project provides the firmware for implementing an ethernet connected
+LED sign in an embedded environment. Software is included to drive the LED
+display, as well as provide a simple HTTP server for configuration.
+
+PROJECT HARDWARE
+
+The core components of this project are:
+- Atmel ATmega328P microcontroller
+- WIZnet WIZ811MJ breakout board with embedded W5100 and RJ-45 connector
+- SureElectronics DE-DP13112 LED display
+
+LICENSE
+
+Original source files are (c) 2012 Benjamin Gwin and are licensed under
+the terms of the GPL v3 (http://www.gnu.org/licenses/gpl.html).

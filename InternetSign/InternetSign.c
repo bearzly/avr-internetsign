@@ -10,6 +10,7 @@
 #include <avr/io.h>
 #include <avr/eeprom.h>
 #include <avr/interrupt.h>
+#include <avr/wdt.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -28,20 +29,26 @@ uint8_t buffer[MAX_BUFFER_SIZE];   // Common buffer used for network I/O
 
 int buttonState = 1; // Old state of the rest button (active low)
 
-static uint8_t defaultIp[] = {192, 168, 1, 20};
-static uint8_t defaultGateway[] = {192, 168, 1, 1};
+static uint8_t defaultIp[] = {192, 168, 0, 20};
+static uint8_t defaultGateway[] = {192, 168, 0, 1};
 static uint8_t defaultMask[] = {255, 255, 255, 0};
 static uint8_t defaultMac[] = {0x00, 0x16, 0x36, 0xDE, 0x58, 0xF6};
 
 // Entry point for the internet sign
 int main(void)
-{			
+{	
+	// Disable the watchdog timer to prevent constant resetting
+	MCUSR = 0;
+    wdt_disable();
+			
+	// Initialize scrolling timer
 	TCCR0B |= (1 << CS02);   // Enable 8 bit timer with a 256 prescaler
 	TCCR0A |= (1 << WGM01);  // Enable 8 bit timer CTC mode
 	
+	// Initialize reset timer
 	TCCR1B |= (1 << CS12);   // Enable 16 bit timer with a 256 prescaler
 	TCCR1B |= (1 << WGM12);  // Enable 16 bit timer CTC mode
-	OCR1A = 11718;           // Set output compare for ~3 seconds
+	OCR1A = 9000;           // Set output compare for ~3 seconds
 	
 	// Initialize pin change interrupt on PD0
 	set_input(DDRD, PD0);
@@ -55,8 +62,7 @@ int main(void)
 	set_gateway(EEGET(GTWY_ADDR + 0),EEGET(GTWY_ADDR + 1),EEGET(GTWY_ADDR + 2),EEGET(GTWY_ADDR + 3));
 	set_mac(EEGET(MAC_ADDR + 0),EEGET(MAC_ADDR + 1),EEGET(MAC_ADDR + 2),EEGET(MAC_ADDR + 3),EEGET(MAC_ADDR + 4),EEGET(MAC_ADDR + 5));
 	set_subnet(EEGET(SNET_MASK + 0),EEGET(SNET_MASK + 1),EEGET(SNET_MASK + 2),EEGET(SNET_MASK + 3));
-	set_ip(192,168,0,20);
-	set_gateway(192,168,0,1);
+	
     initialize_sign();
 	set_brightness(EEGET(BRGHT_ADDR));
 	set_speed(EEGET(SPEED_ADDR));
@@ -112,18 +118,33 @@ int main(void)
 	}
 }
 
-
+// Interrupt triggered when the reset button is pressed
 ISR(PCINT2_vect) {
 	if (buttonState == 1 && (PIND & PD0) == 0) {
 		// Button went from off to on
 		// Reset the timer
 		TCNT1 = 0;
-		
+		TIFR1 = (1 << OCF1A);
 	} else if (buttonState == 0 && (PIND & (1 << PD0)) == 1) {
 		// Button went from on to off
 		if (TIFR1 & (1 << OCF1A)) {
 			// reset
-			TIFR1 = (1 << OCF1A);
+			eeprom_update_block(defaultIp, IP_ADDR, 4);
+			eeprom_update_block(defaultGateway, GTWY_ADDR, 4);
+			eeprom_update_block(defaultMask, SNET_MASK, 4);
+			eeprom_update_block(defaultMac, MAC_ADDR, 6);
+			
+			// Enable watchdog timer and loop until software
+			// reset occurs
+			cli();
+			wdt_enable(WDTO_15MS);
+			while (1) { };
+		} else {
+			if (get_mode() == MESSAGE) {
+				set_mode(CONFIG);
+			} else {
+				set_mode(MESSAGE);
+			}
 		}
 	}
 	buttonState = PIND & (1 << PD0);

@@ -63,7 +63,7 @@ static uint8_t g_frame_buffer[SIGNW];   // Contains the pixel data to be sent
 static int g_cidx = 0;  // index of the current character being drawn
 static int g_idx = 0;   // col index of the current character being drawn
 
-static Mode g_currentMode = MESSAGE;
+Mode g_currentMode = MESSAGE;
 
 // Saves the new message to EEPROM and resets the sign display
 void set_message(const char* msg) {
@@ -230,7 +230,7 @@ void update_buffer(const char* msg, uint8_t* buffer) {
 		}
 	} else {
 	    uint8_t b = pgm_read_byte(Font5x7 + (msg[g_cidx] - 32) * CHARW + g_idx);
-	    if ((b == 0) || (g_idx >= CHARW)) {
+	    if (((b == 0) || (g_idx >= CHARW)) && (g_idx > 0)) {
 		    g_cidx++;
 		    g_idx = 0;
 		    buffer[SIGNW - 1] = 0;
@@ -280,12 +280,14 @@ Mode get_mode() {
 void set_mode(Mode m) {
 	switch(m) {
 		case CONFIG:
-		    sprintf_P(g_message, PSTR("%d.%d.%d.%d %d.%d.%d.%d"), 
+		    sprintf_P(g_message, PSTR("IP:%d.%d.%d.%d   SUBNET:%d.%d.%d.%d"), 
 			    EEGET(IP_ADDR+0),EEGET(IP_ADDR+1),EEGET(IP_ADDR+2),EEGET(IP_ADDR+3),
 				EEGET(SNET_MASK+0),EEGET(SNET_MASK+1),EEGET(SNET_MASK+2),EEGET(SNET_MASK+3));
+			set_speed(1);
 			break;
 		case MESSAGE:
-		    eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
+		    set_speed(EEGET(BRGHT_ADDR));
+			eeprom_read_block(g_message, (void *)MSG_ADDR, MSG_LENGTH);
 			break;
 	}
 	g_currentMode = m;

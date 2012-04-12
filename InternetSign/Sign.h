@@ -31,5 +31,6 @@ void initialize_sign();
 void write_command(uint8_t command);
 void set_brightness(uint8_t brightness);
 void set_mode(Mode m);
+Mode get_mode();
 
 #endif /* SIGN_H_ */
